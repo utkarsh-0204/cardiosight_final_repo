@@ -5,7 +5,7 @@
 
 const axios = require("axios");
 
-const ML_URL = (process.env.ML_SERVER_URL || "http://localhost:8000").replace(
+const ML_URL = (process.env.ML_SERVER_URL || "http://127.0.0.1:8000").replace(
   /\/$/,
   ""
 );
@@ -186,8 +186,7 @@ async function predict(input) {
     const riskScore = Number(data.risk_score);
 
     const riskLevel =
-      data.prediction ||
-      (probability >= 60 ? "high" : probability >= 35 ? "medium" : "low");
+  probability >= 60 ? "high" : probability >= 35 ? "medium" : "low";
 
     return {
       riskScore: Math.round(riskScore),
@@ -218,6 +217,62 @@ async function predict(input) {
   }
 }
 
+const ML_EXPLAIN_URL = `${ML_URL}/api/explain`;
+
+const FRAMINGHAM_FEATURE_KEYS = [
+  "male", "age", "education", "currentSmoker", "cigsPerDay",
+  "BPMeds", "prevalentStroke", "prevalentHyp", "diabetes",
+  "totChol", "sysBP", "diaBP", "BMI", "heartRate", "glucose"
+];
+
+function extractFraminghamFeatures(input) {
+  const clean = {};
+  for (const key of FRAMINGHAM_FEATURE_KEYS) {
+    if (input && input[key] !== undefined && input[key] !== null) {
+      clean[key] = input[key];
+    }
+  }
+  return clean;
+}
+
+async function explain(input) {
+  try {
+    const framinghamFeatures = extractFraminghamFeatures(input);
+    const { data } = await axios.post(
+      ML_EXPLAIN_URL,
+      {
+        features: framinghamFeatures,
+      },
+      {
+        timeout: 10000,
+      }
+    );
+
+    if (!data || data.success !== true) {
+      throw new Error(
+        data?.message || "ML server returned an invalid explanation response."
+      );
+    }
+
+    return data.data;
+  } catch (err) {
+    console.error(
+      `[mlService] ML explanation failed at ${ML_EXPLAIN_URL}:`,
+      err.message
+    );
+    const errorMsg =
+      err.code === "ECONNABORTED" || (err.message && err.message.includes("timeout"))
+        ? "SHAP explanation calculation timed out. Please retry."
+        : err.response?.data?.message ||
+          "ML explanation service is temporarily unavailable. Please make sure the Django ML server is running.";
+    const error = new Error(errorMsg);
+    error.status = 503;
+    throw error;
+  }
+}
+
 module.exports = {
   predict,
+  explain,
+  extractFraminghamFeatures,
 };

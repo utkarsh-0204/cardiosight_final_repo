@@ -3,11 +3,15 @@
 // =============================================================================
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const toast = inject(ToastService);
+  const auth = inject(AuthService);
+  const router = inject(Router);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -21,6 +25,20 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         message = 'Unable to reach the server. Check your connection.';
       } else if (error.status >= 500) {
         message = 'Server error. Our team has been notified.';
+      }
+
+      if (error.status === 401) {
+        const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
+        if (!isAuthEndpoint) {
+          auth.logout();
+          router.navigate(['/auth/login'], {
+            queryParams: { returnUrl: router.routerState.snapshot.url },
+          });
+          toast.error('Session expired', message || 'Your session has expired. Please log in again.');
+          return throwError(() => error);
+        }
+        toast.error('Authentication failed', message);
+        return throwError(() => error);
       }
 
       toast.error('Request failed', message);

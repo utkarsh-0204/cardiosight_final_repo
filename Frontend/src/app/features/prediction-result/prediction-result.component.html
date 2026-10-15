@@ -1,7 +1,7 @@
 @if (loading()) {
   <div class="result-loading">
     <mat-spinner diameter="42"></mat-spinner>
-    <span>Loading your risk assessment…</span>
+    <span>Loading your comprehensive cardiac risk assessment…</span>
   </div>
 }
 
@@ -9,11 +9,10 @@
   <div class="result-page">
     <div class="result-head">
       <div>
-        <span class="eyebrow">Assessment complete</span>
-        <h1>Your heart risk report</h1>
+        <span class="eyebrow">Comprehensive Assessment</span>
+        <h1>Cardiovascular Risk Report</h1>
         <p>
-          Report #{{ r.id }} · generated
-          {{ r.submittedAt | date: 'medium' }}
+          Report #{{ r.id }} · generated {{ r.submittedAt | date: 'medium' }}
         </p>
       </div>
 
@@ -25,14 +24,21 @@
 
         <button mat-stroked-button (click)="downloadReport()">
           <mat-icon>download</mat-icon>
-          Download report
+          Download JSON
         </button>
       </div>
     </div>
 
-    <div class="hero-grid">
+    <!-- ========================================================= -->
+    <!-- SECTION A: FRAMINGHAM 10-YEAR CHD RISK -->
+    <!-- ========================================================= -->
+    <div class="section-badge-header">
+      <span class="sec-label">PRIMARY MODEL (FRAMINGHAM)</span>
+      <h2>10-Year Coronary Heart Disease Risk</h2>
+    </div>
 
-      <!-- Score -->
+    <div class="hero-grid">
+      <!-- Score & Meter -->
       <div class="hero-score">
         <div class="meter-wrap">
           <app-risk-meter
@@ -46,100 +52,63 @@
           class="risk-badge"
           [class.medium]="r.riskLevel === 'medium'"
           [class.high]="r.riskLevel === 'high'">
-
           <mat-icon>
             @switch (r.riskLevel) {
-              @case ('low') {
-                check_circle
-              }
-
-              @case ('medium') {
-                error_outline
-              }
-
-              @default {
-                warning
-              }
+              @case ('low') { check_circle }
+              @case ('medium') { error_outline }
+              @default { warning }
             }
           </mat-icon>
-
           {{ r.riskLevel }} risk
         </span>
 
         <p class="risk-note">
-          Based on the ML engine, your estimated 10-year coronary heart
-          disease probability is
+          Based on Framingham clinical parameters, your estimated 10-year coronary heart disease probability is
           <strong>{{ r.diseaseProbability }}%</strong>.
-          This is a screening estimate, not a medical diagnosis.
         </p>
       </div>
 
-      <!-- Summary -->
+      <!-- Clinical Summary & Confidence -->
       <div class="hero-summary">
         <div class="summary-card">
-
           <div class="summary-row">
-
-            <!-- Age -->
             <div class="metric-mini">
-              <span class="metric-mini-icon">
-                <mat-icon>favorite</mat-icon>
-              </span>
-
+              <span class="metric-mini-icon"><mat-icon>favorite</mat-icon></span>
               <div>
                 <strong>{{ r.input.age }} yrs</strong>
                 <span>Age at screening</span>
               </div>
             </div>
 
-            <!-- Sex -->
             <div class="metric-mini">
-              <span class="metric-mini-icon">
-                <mat-icon>person</mat-icon>
-              </span>
-
+              <span class="metric-mini-icon"><mat-icon>person</mat-icon></span>
               <div>
-                <strong>
-                  {{ r.input.male === 1 ? 'Male' : 'Female' }}
-                </strong>
-
+                <strong>{{ r.input.male === 1 ? 'Male' : 'Female' }}</strong>
                 <span>Sex</span>
               </div>
             </div>
 
-            <!-- BMI -->
             <div class="metric-mini">
-              <span class="metric-mini-icon">
-                <mat-icon>accessibility</mat-icon>
-              </span>
-
+              <span class="metric-mini-icon"><mat-icon>accessibility</mat-icon></span>
               <div>
                 <strong>{{ r.input.BMI }}</strong>
                 <span>BMI</span>
               </div>
             </div>
 
-            <!-- Heart rate -->
             <div class="metric-mini">
-              <span class="metric-mini-icon">
-                <mat-icon>monitor_heart</mat-icon>
-              </span>
-
+              <span class="metric-mini-icon"><mat-icon>monitor_heart</mat-icon></span>
               <div>
                 <strong>{{ r.input.heartRate }} bpm</strong>
                 <span>Resting heart rate</span>
               </div>
             </div>
-
           </div>
 
-          <!-- Confidence -->
           <div class="confidence-row">
             <div class="confidence-text">
-              <strong>Model confidence</strong>
-              <span>
-                How sure the engine is about this estimate
-              </span>
+              <strong>Model Confidence</strong>
+              <span>Decision boundary certainty for this patient profile</span>
             </div>
 
             <app-circular-progress
@@ -147,43 +116,31 @@
               [size]="86"
               [strokeWidth]="8"
               [color]="meterColor[r.riskLevel]">
-
-              <strong style="font-size: 18px">
-                {{ r.confidence }}%
-              </strong>
-
+              <strong style="font-size: 18px">{{ r.confidence }}%</strong>
             </app-circular-progress>
           </div>
 
-          <!-- Clinical summary -->
           <div class="summary-meta">
             <mat-icon>bloodtype</mat-icon>
             <span>{{ metricSummary() }}</span>
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Contributing factors -->
+    <!-- Contributing Factors -->
     <div class="section-card">
       <h2>
         <mat-icon>insights</mat-icon>
-        What is driving your score
+        Key Factors Influencing Your Score
       </h2>
-
       <p class="section-sub">
-        Each factor pulls your risk up (red) or down (green).
-        Longer bars = stronger influence.
+        Relative influence of biometric and lifestyle indicators on the 10-year Framingham estimate.
       </p>
 
       @for (factor of r.contributingFactors; track factor.factor) {
         <div class="factor-row">
-
-          <span class="factor-name">
-            {{ factor.label }}
-          </span>
-
+          <span class="factor-name">{{ factor.label }}</span>
           <div class="factor-track">
             <span
               class="factor-fill"
@@ -191,102 +148,590 @@
               [style.width]="factorWidth(factor)">
             </span>
           </div>
-
-          <span class="factor-detail">
-            {{ factor.detail }}
-          </span>
-
+          <span class="factor-detail">{{ factor.detail }}</span>
         </div>
       }
     </div>
 
-    <!-- Recommendations -->
+    <!-- Action Plan -->
     <div class="section-card">
-
       <h2>
         <mat-icon>recommend</mat-icon>
-        Your action plan
+        Clinical Action Recommendations
       </h2>
-
-      <p class="section-sub">
-        Personalised steps to lower your risk.
-        Start with the first one today.
-      </p>
+      <p class="section-sub">Evidence-based steps to mitigate cardiovascular risk factors.</p>
 
       <div class="recommendations">
-
-        @for (
-          rec of r.recommendations;
-          track rec;
-          let i = $index
-        ) {
-
+        @for (rec of r.recommendations; track rec; let i = $index) {
           <div class="rec-card">
-
             <span
               class="rec-icon"
-              [class]="
-                i % 3 === 1
-                  ? 'secondary'
-                  : i % 3 === 2
-                    ? 'accent'
-                    : ''
-              ">
-
+              [class]="i % 3 === 1 ? 'secondary' : i % 3 === 2 ? 'accent' : ''">
               <mat-icon>
-                {{
-                  i % 3 === 0
-                    ? 'favorite'
-                    : i % 3 === 1
-                      ? 'self_improvement'
-                      : 'monitor_heart'
-                }}
+                {{ i % 3 === 0 ? 'favorite' : i % 3 === 1 ? 'self_improvement' : 'monitor_heart' }}
               </mat-icon>
-
             </span>
-
             <div class="rec-text">
-              <strong>
-                Recommendation {{ i + 1 }}
-              </strong>
-
+              <strong>Recommendation {{ i + 1 }}</strong>
               <p>{{ rec }}</p>
             </div>
-
           </div>
         }
-
       </div>
     </div>
 
-    <!-- Footer -->
+    <!-- ========================================================= -->
+    <!-- SECTION: UNDERSTANDING YOUR CHD RISK (EXPLAINABLE AI)     -->
+    <!-- ========================================================= -->
+    <div class="section-badge-header">
+      <span class="sec-label xai-label">EXPLAINABLE AI (XAI)</span>
+      <h2>Understanding Your CHD Risk</h2>
+    </div>
+
+    @if (explanationLoading()) {
+      <div class="xai-loading-card">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Computing mathematical SHAP feature attributions and risk contributions…</span>
+      </div>
+    } @else if (explanation(); as exp) {
+      <div class="xai-container">
+        <!-- A. PREDICTED RISK SUMMARY -->
+        <div class="xai-summary-card">
+          <div class="xai-summary-header">
+            <div>
+              <span class="xai-sub-tag">MODEL-DERIVED INFERENCE SUMMARY</span>
+              <h3>Predicted Risk & Model Baseline Prior</h3>
+            </div>
+            <div class="xai-badge-consistency" [class.valid]="exp.mathematical_consistency">
+              <mat-icon>{{ exp.mathematical_consistency ? 'verified' : 'info' }}</mat-icon>
+              <span>{{ exp.mathematical_consistency ? 'Mathematically Consistent Attribution' : 'Attribution Approximate' }}</span>
+            </div>
+          </div>
+
+          <div class="xai-summary-grid">
+            <div class="xai-metric-box">
+              <span class="xai-m-label">Target Time Horizon</span>
+              <strong class="xai-m-val highlight">{{ exp.time_horizon }}</strong>
+              <span class="xai-m-sub">Framingham Heart Study prospective endpoint</span>
+            </div>
+
+            <div class="xai-metric-box">
+              <span class="xai-m-label">Model Predicted Probability</span>
+              <strong class="xai-m-val danger">{{ exp.predicted_probability }}%</strong>
+              <span class="xai-m-sub">Final risk probability from trained ensemble</span>
+            </div>
+
+            <div class="xai-metric-box">
+              <span class="xai-m-label">Cohort Baseline Prior (E[f(x)])</span>
+              <strong class="xai-m-val neutral">{{ exp.base_value }}%</strong>
+              <span class="xai-m-sub">Prior expectation across training population</span>
+            </div>
+
+            <div class="xai-metric-box">
+              <span class="xai-m-label">Attribution Method</span>
+              <strong class="xai-m-val">{{ exp.explanation_method }}</strong>
+              <span class="xai-m-sub">Scikit-learn {{ exp.model_type }} Pipeline</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- E. PERSONALIZED EXPLANATION -->
+        <div class="xai-personalized-card">
+          <div class="xai-personalized-head">
+            <mat-icon>psychology</mat-icon>
+            <h4>Personalized Model Attribution Insights</h4>
+          </div>
+          <p class="xai-personalized-text">
+            {{ exp.personalized_explanation }}
+          </p>
+          <div class="xai-note-box">
+            <mat-icon>info</mat-icon>
+            <span>
+              <strong>Clinical Context:</strong> The insights above reflect statistical feature interactions within the trained Random Forest ensemble. They represent mathematical shifts in estimated probability, not direct physiological causation.
+            </span>
+          </div>
+        </div>
+
+        <!-- B. TOP CONTRIBUTING FACTORS (Positive & Negative) -->
+        <div class="xai-factors-grid">
+          <!-- Top Risk-Increasing Contributors -->
+          <div class="xai-factor-col">
+            <div class="factor-col-head positive-head">
+              <mat-icon>trending_up</mat-icon>
+              <div>
+                <h4>Top Risk-Increasing Contributors</h4>
+                <span>Parameters that pushed the model prediction above baseline</span>
+              </div>
+            </div>
+
+            <div class="factor-cards-list">
+              @for (factor of exp.top_positive_factors; track factor.feature) {
+                <div class="xai-factor-item increase">
+                  <div class="factor-item-top">
+                    <div>
+                      <strong class="factor-item-label">{{ factor.label }}</strong>
+                      <span class="factor-item-val">{{ factor.formatted_value }}</span>
+                    </div>
+                    <span class="factor-shift-badge increase">
+                      +{{ factor.contribution_pct }}%
+                    </span>
+                  </div>
+                  <p class="factor-item-desc">{{ factor.clinical_insight }}</p>
+                </div>
+              }
+              @if (exp.top_positive_factors.length === 0) {
+                <div class="xai-empty-state">No factors significantly increased the predicted risk.</div>
+              }
+            </div>
+          </div>
+
+          <!-- Top Risk-Mitigating Contributors -->
+          <div class="xai-factor-col">
+            <div class="factor-col-head negative-head">
+              <mat-icon>trending_down</mat-icon>
+              <div>
+                <h4>Top Risk-Mitigating Contributors</h4>
+                <span>Parameters that pushed the model prediction downward</span>
+              </div>
+            </div>
+
+            <div class="factor-cards-list">
+              @for (factor of exp.top_negative_factors; track factor.feature) {
+                <div class="xai-factor-item decrease">
+                  <div class="factor-item-top">
+                    <div>
+                      <strong class="factor-item-label">{{ factor.label }}</strong>
+                      <span class="factor-item-val">{{ factor.formatted_value }}</span>
+                    </div>
+                    <span class="factor-shift-badge decrease">
+                      {{ factor.contribution_pct }}%
+                    </span>
+                  </div>
+                  <p class="factor-item-desc">{{ factor.clinical_insight }}</p>
+                </div>
+              }
+              @if (exp.top_negative_factors.length === 0) {
+                <div class="xai-empty-state">No factors significantly mitigated the predicted risk.</div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- C. SHAP WATERFALL CHART & STEP SEQUENCE -->
+        <div class="xai-chart-card">
+          <div class="chart-card-head">
+            <div>
+              <span class="xai-sub-tag">INDIVIDUAL LOCAL EXPLANATION</span>
+              <h3>SHAP Waterfall Progression Chart</h3>
+              <p class="chart-desc">
+                Traces step-by-step how the baseline prior ({{ exp.base_value }}%) shifts with each biometric input to reach the final predicted probability of {{ exp.predicted_probability }}%.
+              </p>
+            </div>
+          </div>
+
+          <!-- Interactive Chart.js Attribution Bar Chart -->
+          <div class="chart-wrapper">
+            <app-chart
+              kind="bar"
+              [labels]="shapChartLabels()"
+              [datasets]="shapChartDatasets()"
+              [options]="shapChartOptions"
+              height="400px"
+              ariaLabel="Individual SHAP Waterfall Feature Contributions">
+            </app-chart>
+          </div>
+
+          <!-- Step-by-Step Waterfall Progression Track -->
+          <div class="waterfall-track-container">
+            <h4 class="waterfall-track-title">Detailed Waterfall Step Sequence</h4>
+            <div class="waterfall-stepper">
+              @for (step of exp.waterfall_steps; track step.label; let idx = $index) {
+                <div class="step-card" [class]="step.type">
+                  <div class="step-badge-col">
+                    <span class="step-num">{{ idx + 1 }}</span>
+                    <span class="step-type-pill" [class]="step.type">
+                      {{ step.type | uppercase }}
+                    </span>
+                  </div>
+
+                  <div class="step-content">
+                    <div class="step-content-row">
+                      <strong>{{ step.label }}</strong>
+                      @if (step.formatted_value) {
+                        <span class="step-feat-val">({{ step.formatted_value }})</span>
+                      }
+                      <span class="step-running-score">
+                        Running Total: <strong>{{ step.running_total }}%</strong>
+                      </span>
+                    </div>
+
+                    <p class="step-description">{{ step.description }}</p>
+
+                    @if (step.shift !== 0) {
+                      <div class="step-shift-row">
+                        <span class="shift-tag" [class.pos]="step.shift > 0" [class.neg]="step.shift < 0">
+                          {{ step.shift > 0 ? '+' : '' }}{{ step.shift }}% probability shift
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- D. FEATURE IMPORTANCE CHART (Global vs Individual) -->
+        <div class="xai-chart-card">
+          <div class="chart-card-head">
+            <div>
+              <span class="xai-sub-tag">GLOBAL MODEL ARCHITECTURE</span>
+              <h3>Global Feature Importance vs. Individual Explanation</h3>
+              <p class="chart-desc">
+                Shows overall Gini importance across the entire Framingham training dataset. This reflects general feature relevance for the model as a whole, distinct from your specific individual SHAP attributions above.
+              </p>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <app-chart
+              kind="bar"
+              [labels]="globalChartLabels()"
+              [datasets]="globalChartDatasets()"
+              [options]="globalChartOptions"
+              height="380px"
+              ariaLabel="Global Model Feature Importance">
+            </app-chart>
+          </div>
+        </div>
+
+        <!-- MEDICAL INTERPRETATION DISCLAIMER (Section 7) -->
+        <div class="xai-disclaimer-box">
+          <mat-icon>health_and_safety</mat-icon>
+          <div>
+            <strong>Medical & Algorithmic Notice:</strong>
+            <p>
+              {{ exp.disclaimer }}
+              This tool provides statistical machine learning explanations for screening support only. It does not label an individual as definitively healthy or unhealthy, does not recommend medications, and must never replace comprehensive clinical evaluation by a board-certified physician or cardiologist.
+            </p>
+          </div>
+        </div>
+      </div>
+    } @else if (explanationError()) {
+      <div class="xai-error-card">
+        <div class="xai-error-main">
+          <mat-icon class="xai-error-icon">info_outline</mat-icon>
+          <div class="xai-error-text">
+            <h4>Explainable AI Insights Temporarily Unavailable</h4>
+            <p>{{ explanationError() }}</p>
+            <span class="xai-error-reassurance">
+              Your primary Framingham 10-year risk assessment, model confidence, and ECG/TMT investigation findings above remain completely intact and unaffected.
+            </span>
+          </div>
+        </div>
+        <div class="xai-error-actions">
+          <button
+            mat-stroked-button
+            color="primary"
+            class="xai-retry-button"
+            (click)="retryExplanation()"
+            [disabled]="explanationLoading()">
+            <mat-icon>refresh</mat-icon>
+            Retry Explanation
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ========================================================= -->
+    <!-- SECTION B: ECG REPORT FINDINGS (If provided) -->
+    <!-- ========================================================= -->
+    @if (hasEcg() && r.ecg; as ecg) {
+      <div class="investigation-result-section">
+        <div class="section-badge-header">
+          <span class="sec-label ecg-label">INVESTIGATION B</span>
+          <h2>ECG Report Analysis Findings</h2>
+        </div>
+
+        <div class="inv-result-card">
+          <div class="inv-head-row">
+            <div class="inv-head-title">
+              <mat-icon class="inv-icon ecg">monitor_heart</mat-icon>
+              <div>
+                <h3>12-Lead Electrocardiogram Interpretation</h3>
+                <span>Rhythm: <strong>{{ ecg.rhythm || 'Sinus' }}</strong> · PTB-XL Category: <strong>{{ ecg.ptbxlDiagnosticClass || 'Evaluated' }}</strong></span>
+              </div>
+            </div>
+
+            <span
+              class="status-pill"
+              [class.normal]="ecg.status === 'normal'"
+              [class.borderline]="ecg.status === 'borderline'"
+              [class.abnormal]="ecg.status === 'abnormal'">
+              {{ ecg.status | uppercase }}
+            </span>
+          </div>
+
+          <div class="measurements-grid">
+            <div class="meas-box">
+              <span class="meas-title">Heart Rate</span>
+              <strong class="meas-val">{{ ecg.measurements.heartRate ?? 'N/A' }} <small>bpm</small></strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">PR Interval</span>
+              <strong class="meas-val">{{ ecg.measurements.prInterval ?? 'N/A' }} <small>ms</small></strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">QRS Duration</span>
+              <strong class="meas-val">{{ ecg.measurements.qrsDuration ?? 'N/A' }} <small>ms</small></strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">QT / QTc Interval</span>
+              <strong class="meas-val">
+                {{ ecg.measurements.qtInterval ?? 'N/A' }} / {{ ecg.measurements.qtcInterval ?? 'N/A' }} <small>ms</small>
+              </strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">ST-Segment</span>
+              <strong class="meas-val-sm">{{ ecg.measurements.stFindings || 'Isoelectric / Normal' }}</strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">T-Wave</span>
+              <strong class="meas-val-sm">{{ ecg.measurements.tWaveFindings || 'Normal' }}</strong>
+            </div>
+          </div>
+
+          @if (ecg.abnormalities.length > 0) {
+            <div class="abnormalities-box">
+              <strong>Flagged Findings:</strong>
+              <ul>
+                @for (ab of ecg.abnormalities; track ab) {
+                  <li>{{ ab }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <div class="inv-summary-banner">
+            <mat-icon>assignment</mat-icon>
+            <div>
+              <strong>Report Summary:</strong>
+              <p>{{ ecg.interpretationSummary }}</p>
+            </div>
+          </div>
+
+          <div class="inv-disclaimer-note">
+            <mat-icon>info</mat-icon>
+            <span>{{ ecg.disclaimer }}</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ========================================================= -->
+    <!-- SECTION C: TMT REPORT FINDINGS (If provided) -->
+    <!-- ========================================================= -->
+    @if (hasTmt() && r.tmt; as tmt) {
+      <div class="investigation-result-section">
+        <div class="section-badge-header">
+          <span class="sec-label tmt-label">INVESTIGATION C</span>
+          <h2>Treadmill Test (TMT) Stress Analysis Findings</h2>
+        </div>
+
+        <div class="inv-result-card">
+          <div class="inv-head-row">
+            <div class="inv-head-title">
+              <mat-icon class="inv-icon tmt">directions_run</mat-icon>
+              <div>
+                <h3>Exercise Stress Test & Ischemic Evaluation</h3>
+                <span>
+                  Duke Treadmill Stratification & Machine Learning Stress Analysis (UCI Dataset Pipeline)
+                </span>
+              </div>
+            </div>
+
+            <span
+              class="status-pill"
+              [class.normal]="tmt.status === 'normal'"
+              [class.borderline]="tmt.status === 'inconclusive'"
+              [class.abnormal]="tmt.status === 'ischemic_response'">
+              {{ tmt.status === 'ischemic_response' ? 'ISCHEMIC RESPONSE' : (tmt.status | uppercase) }}
+            </span>
+          </div>
+
+          <!-- Dual Stress Models: Duke Score + UCI ML Model -->
+          <div class="stress-models-grid">
+            <!-- Duke Treadmill Score -->
+            @if (tmt.dukeTreadmillScore; as dts) {
+              <div class="model-card">
+                <span class="model-tag">CLINICAL INDEX</span>
+                <h4>Duke Treadmill Score (DTS)</h4>
+                <div class="score-display">
+                  <span class="score-num">{{ dts.score }}</span>
+                  <span
+                    class="dts-badge"
+                    [class.low]="dts.riskCategory === 'Low Risk'"
+                    [class.mod]="dts.riskCategory === 'Moderate Risk'"
+                    [class.high]="dts.riskCategory === 'High Risk'">
+                    {{ dts.riskCategory }}
+                  </span>
+                </div>
+                <p class="model-metric">Estimated Annual Mortality: <strong>{{ dts.estimatedAnnualMortality }}</strong></p>
+                <p class="model-sub">{{ dts.note }}</p>
+              </div>
+            }
+
+            <!-- UCI ML Model -->
+            @if (tmt.mlUciStressModel; as mlModel) {
+              <div class="model-card">
+                <span class="model-tag">MACHINE LEARNING MODEL</span>
+                <h4>Exercise-Induced Ischemia Model</h4>
+                <div class="score-display">
+                  <span class="ml-prob">{{ mlModel.riskProbability }}%</span>
+                  <span class="dts-badge" [class.high]="mlModel.predictedClass === 1" [class.low]="mlModel.predictedClass === 0">
+                    {{ mlModel.label }}
+                  </span>
+                </div>
+                <p class="model-metric">Model Confidence: <strong>{{ mlModel.confidence }}%</strong></p>
+                <p class="model-sub">
+                  Trained on genuine UCI Heart Disease clinical recordings (evaluating angiographic CAD / inducible ischemia; ROC-AUC: 0.9545).
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Exercise Measurements Grid -->
+          <div class="measurements-grid">
+            <div class="meas-box">
+              <span class="meas-title">Peak Heart Rate</span>
+              <strong class="meas-val">{{ tmt.measurements.thalach ?? 'N/A' }} <small>bpm</small></strong>
+              @if (tmt.targetHeartRate) {
+                <span class="meas-sub">{{ tmt.targetHeartRate.achievedPercentOfMax }}% of max MPHR</span>
+              }
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">ST Depression (oldpeak)</span>
+              <strong class="meas-val">{{ tmt.measurements.oldpeak != null ? tmt.measurements.oldpeak : 'N/A' }} <small>mm</small></strong>
+              <span class="meas-sub">Slope: {{ tmt.measurements.slope === 1 ? 'Upsloping' : tmt.measurements.slope === 2 ? 'Flat' : 'Downsloping' }}</span>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">Exercise Angina (exang)</span>
+              <strong class="meas-val-sm">{{ tmt.measurements.exang === 1 ? 'Induced during test' : 'Negative for angina' }}</strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">Metabolic Equivalents</span>
+              <strong class="meas-val">{{ tmt.measurements.mets ?? 'N/A' }} <small>METs</small></strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">Exercise Duration</span>
+              <strong class="meas-val">{{ tmt.measurements.durationMinutes ?? 'N/A' }} <small>min</small></strong>
+            </div>
+
+            <div class="meas-box">
+              <span class="meas-title">Resting ECG</span>
+              <strong class="meas-val-sm">
+                {{ tmt.measurements.restecg === 0 ? 'Normal' : tmt.measurements.restecg === 1 ? 'ST-T abnormality' : 'Left Ventricular Hypertrophy' }}
+              </strong>
+            </div>
+          </div>
+
+          @if (tmt.reportedConclusion) {
+            <div class="inv-summary-banner">
+              <mat-icon>check_circle_outline</mat-icon>
+              <div>
+                <strong>Reported Test Conclusion:</strong>
+                <p>{{ tmt.reportedConclusion }}</p>
+              </div>
+            </div>
+          }
+
+          <div class="inv-disclaimer-note">
+            <mat-icon>info</mat-icon>
+            <span>{{ tmt.disclaimer }}</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ========================================================= -->
+    <!-- SECTION D: EXTRACTION & QUALITY WARNINGS (If any) -->
+    <!-- ========================================================= -->
+    @if (allWarnings().length > 0) {
+      <div class="warnings-card">
+        <mat-icon class="warn-icon">info_outline</mat-icon>
+        <div>
+          <h3>Extraction & Data Quality Notes</h3>
+          <p>The following notes were flagged during automated report parsing:</p>
+          <ul>
+            @for (w of allWarnings(); track w) {
+              <li>{{ w }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+    }
+
+    <!-- ========================================================= -->
+    <!-- SECTION E: UNIFIED SUMMARY & MEDICAL DISCLAIMER -->
+    <!-- ========================================================= -->
+    <div class="comprehensive-disclaimer-card">
+      <div class="disclaimer-header">
+        <mat-icon>verified_user</mat-icon>
+        <h3>CardioSight Multi-Model Evaluation & Clinical Disclaimer</h3>
+      </div>
+      <p>
+        This comprehensive report combines distinct, decoupled clinical methodologies:
+      </p>
+      <ol class="methodology-list">
+        <li>
+          <strong>Framingham Risk Model:</strong> Evaluates 10-year cumulative probability of coronary heart disease events
+          based on lifestyle, metabolic, and hemodynamic factors.
+        </li>
+        @if (hasEcg()) {
+          <li>
+            <strong>ECG Findings Analysis:</strong> Interprets electrical cardiac conduction, rate, intervals (PR, QRS, QTc),
+            and repolarization parameters against clinical standards and PTB-XL diagnostic criteria.
+          </li>
+        }
+        @if (hasTmt()) {
+          <li>
+            <strong>Exercise Stress Analysis:</strong> Assesses functional capacity and inducible myocardial ischemia using
+            the Duke Treadmill Score and a machine learning pipeline trained on genuine UCI Heart Disease recordings.
+          </li>
+        }
+      </ol>
+      <p class="disclaimer-footer-text">
+        <strong>Medical Notice:</strong> CardioSight outputs are intended for clinical screening and decision support only.
+        Predictions and confidence metrics represent statistical model certainty and do not constitute a definitive medical diagnosis.
+        Always consult a qualified cardiologist or medical practitioner for clinical evaluation and therapeutic management.
+      </p>
+    </div>
+
+    <!-- Footer Actions -->
     <div class="result-footer">
-
-      <button
-        mat-stroked-button
-        routerLink="/app/predict">
-
+      <button mat-stroked-button routerLink="/app/predict">
         <mat-icon>edit</mat-icon>
-        New assessment
+        New Assessment
       </button>
 
-      <button
-        mat-stroked-button
-        routerLink="/app/history">
-
+      <button mat-stroked-button routerLink="/app/history">
         <mat-icon>history</mat-icon>
-        View history
+        View History
       </button>
 
-      <button
-        mat-flat-button
-        color="primary"
-        routerLink="/app/dashboard">
-
+      <button mat-flat-button color="primary" routerLink="/app/dashboard">
         <mat-icon>dashboard</mat-icon>
-        Back to dashboard
+        Back to Dashboard
       </button>
-
     </div>
   </div>
 }

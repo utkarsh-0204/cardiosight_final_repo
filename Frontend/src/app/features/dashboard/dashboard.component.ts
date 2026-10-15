@@ -136,18 +136,33 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadAll(): void {
-    this.dashboard.getSummary().subscribe((summary) => {
-      this.summary.set(summary);
-      this.loading.set(false);
+    this.dashboard.getSummary().subscribe({
+      next: (summary) => {
+        this.summary.set(summary);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
     });
 
-    this.notifications.load().subscribe((items) => {
-      this.notifications.replace(items);
-      this.recentNotifications.set(items.slice(0, 4));
+    this.notifications.load().subscribe({
+      next: (items) => {
+        this.notifications.replace(items);
+        this.recentNotifications.set(items.slice(0, 4));
+      },
+      error: () => {},
     });
 
-    this.dashboard.getActivities().subscribe((items) => this.activities.set(items.slice(0, 5)));
-    this.dashboard.getHealthTips().subscribe((tips) => this.tips.set(tips));
+    this.dashboard.getActivities().subscribe({
+      next: (items) => this.activities.set(items.slice(0, 5)),
+      error: () => {},
+    });
+
+    this.dashboard.getHealthTips().subscribe({
+      next: (tips) => this.tips.set(tips),
+      error: () => {},
+    });
   }
 
   goPredict(): void {

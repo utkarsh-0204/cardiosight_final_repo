@@ -3,7 +3,7 @@
 // Switches to realistic mock responses when environment.useMock is enabled.
 // =============================================================================
 import { computed, Injectable, inject, signal } from '@angular/core';
-import { delay, Observable, of, tap } from 'rxjs';
+import { catchError, delay, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MOCK_ADMIN, MOCK_USER } from '../data/mock-data';
 import type {
@@ -114,7 +114,38 @@ export class AuthService {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
 
+  private sessionValidated = false;
+
+  /** Validates the current token against the backend (/api/auth/me) */
+  validateSession(force = false): Observable<boolean> {
+    if (environment.useMock) {
+      return of(this.isAuthenticated());
+    }
+
+    const token = this.token();
+    if (!token) {
+      this.logout();
+      return of(false);
+    }
+
+    if (this.sessionValidated && !force && this.user()) {
+      return of(true);
+    }
+
+    return this.refreshProfile().pipe(
+      map((user) => {
+        this.sessionValidated = true;
+        return Boolean(user);
+      }),
+      catchError(() => {
+        this.logout();
+        return of(false);
+      }),
+    );
+  }
+
   logout(): void {
+    this.sessionValidated = false;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     this.user.set(null);
@@ -134,6 +165,7 @@ export class AuthService {
   }
 
   private persist(response: AuthResponse): void {
+    this.sessionValidated = true;
     localStorage.setItem(TOKEN_KEY, response.tokens.accessToken);
     localStorage.setItem(USER_KEY, JSON.stringify(response.user));
     this.token.set(response.tokens.accessToken);

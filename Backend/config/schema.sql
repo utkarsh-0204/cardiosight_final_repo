@@ -57,8 +57,11 @@ CREATE TABLE IF NOT EXISTS predictions (
   input                JSONB NOT NULL DEFAULT '{}',
   recommendations      JSONB NOT NULL DEFAULT '[]',
   contributing_factors JSONB NOT NULL DEFAULT '[]',
+  explanation          JSONB,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE predictions ADD COLUMN IF NOT EXISTS explanation JSONB;
 
 CREATE INDEX IF NOT EXISTS idx_predictions_user_id     ON predictions(user_id);
 CREATE INDEX IF NOT EXISTS idx_predictions_created_at  ON predictions(created_at DESC);

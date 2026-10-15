@@ -30,6 +30,7 @@ const userRoutes = require('./routes/userRoutes');
 const predictionRoutes = require('./routes/predictionRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const investigationRoutes = require('./routes/investigationRoutes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 app.use('/api/auth', authRoutes);
@@ -37,6 +38,7 @@ app.use('/api', userRoutes);
 app.use('/api', predictionRoutes);
 app.use('/api', dashboardRoutes);
 app.use('/api', adminRoutes);
+app.use('/api/investigations', investigationRoutes);
 
 // ---------------------------------------------------------------------------
 // Health check
@@ -75,5 +77,29 @@ const PORT = Number(process.env.PORT) || 3000;
 const server = app.listen(PORT, () => {
   console.log(`CardioSight API listening on http://localhost:${PORT}`);
 });
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[CardioSight Backend] Error: Port ${PORT} is already in use.`);
+    console.error(`Another instance of CardioSight backend is already listening on port ${PORT}.`);
+    console.error(`To inspect the active process, run: lsof -i :${PORT}\n`);
+    process.exit(1);
+  } else {
+    console.error('[CardioSight Backend] Server error:', err);
+    process.exit(1);
+  }
+});
+
+const gracefulShutdown = () => {
+  server.close(async () => {
+    try {
+      await pool.end();
+    } catch (_) {}
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 module.exports = { app, server };

@@ -3,22 +3,20 @@
   <div class="form-head">
     <div>
       <span class="eyebrow">
-        FRAMINGHAM RISK ASSESSMENT
+        CARDIOSIGHT RISK ASSESSMENT
       </span>
 
       <h1>New Prediction</h1>
 
       <p>
-        Enter the patient's clinical information
-        to estimate 10-year coronary heart disease risk.
+        Enter the patient's clinical information to estimate 10-year coronary heart disease risk,
+        with optional ECG and exercise stress test investigation analysis.
       </p>
     </div>
   </div>
 
   <!-- STEPPER -->
-
   <div class="stepper">
-
     <div class="stepper-track">
       <div
         class="stepper-fill"
@@ -27,9 +25,7 @@
     </div>
 
     <div class="stepper-steps">
-
       @for (step of steps; track step.id) {
-
         <button
           type="button"
           class="step-chip"
@@ -37,224 +33,96 @@
           [class.done]="isDone(step.id)"
           (click)="goToStep(step.id)"
         >
-
           <span class="step-icon">
             <mat-icon>
-              {{
-                isDone(step.id)
-                  ? 'check'
-                  : step.icon
-              }}
+              {{ isDone(step.id) ? 'check' : step.icon }}
             </mat-icon>
           </span>
 
           <span class="step-meta">
-            <strong>
-              {{ step.title }}
-            </strong>
-
-            <em>
-              {{ step.subtitle }}
-            </em>
+            <strong>{{ step.title }}</strong>
+            <em>{{ step.subtitle }}</em>
           </span>
-
         </button>
-
       }
-
     </div>
-
   </div>
 
-
   <!-- FORM -->
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
-  <form
-    [formGroup]="form"
-    (ngSubmit)="onSubmit()"
-  >
-
-    <div
-      class="form-card"
-      [ngSwitch]="currentStep()"
-    >
+    <div class="form-card" [ngSwitch]="currentStep()">
 
       <!-- ========================================================= -->
-      <!-- STEP 1 -->
+      <!-- STEP 1: Personal -->
       <!-- ========================================================= -->
-
-      <section
-        *ngSwitchCase="1"
-        class="step-body"
-      >
-
+      <section *ngSwitchCase="1" class="step-body">
         <div class="step-intro">
-
           <div class="step-intro-icon">
-            <mat-icon>
-              person
-            </mat-icon>
+            <mat-icon>person</mat-icon>
           </div>
-
           <div>
-            <h2>
-              Personal Information
-            </h2>
-
-            <p>
-              Basic demographic information.
-            </p>
+            <h2>Personal Information</h2>
+            <p>Basic demographic information required for Framingham scoring.</p>
           </div>
-
         </div>
-
 
         <div class="fields-grid">
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Age
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              formControlName="age"
-            />
-
-            <mat-hint>
-              18–100 years
-            </mat-hint>
-
+            <mat-label>Age</mat-label>
+            <input matInput type="number" formControlName="age" />
+            <mat-hint>18–100 years</mat-hint>
           </mat-form-field>
 
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Sex
-            </mat-label>
-
-            <mat-select
-              formControlName="male"
-            >
-
-              <mat-option [value]="1">
-                Male
-              </mat-option>
-
-              <mat-option [value]="0">
-                Female
-              </mat-option>
-
+            <mat-label>Sex</mat-label>
+            <mat-select formControlName="male">
+              <mat-option [value]="1">Male</mat-option>
+              <mat-option [value]="0">Female</mat-option>
             </mat-select>
-
           </mat-form-field>
-
 
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Education level
-            </mat-label>
-
-            <mat-select
-              formControlName="education"
-            >
-
-              <mat-option [value]="1">
-                Level 1
-              </mat-option>
-
-              <mat-option [value]="2">
-                Level 2
-              </mat-option>
-
-              <mat-option [value]="3">
-                Level 3
-              </mat-option>
-
-              <mat-option [value]="4">
-                Level 4
-              </mat-option>
-
+            <mat-label>Education level</mat-label>
+            <mat-select formControlName="education">
+              <mat-option [value]="1">Level 1 (Some High School)</mat-option>
+              <mat-option [value]="2">Level 2 (High School / GED)</mat-option>
+              <mat-option [value]="3">Level 3 (Some College / Vocational)</mat-option>
+              <mat-option [value]="4">Level 4 (College Degree)</mat-option>
             </mat-select>
-
           </mat-form-field>
-
         </div>
-
       </section>
 
-
       <!-- ========================================================= -->
-      <!-- STEP 2 -->
+      <!-- STEP 2: Lifestyle -->
       <!-- ========================================================= -->
-
-      <section
-        *ngSwitchCase="2"
-        class="step-body"
-      >
-
+      <section *ngSwitchCase="2" class="step-body">
         <div class="step-intro">
-
           <div class="step-intro-icon">
-            <mat-icon>
-              smoking_rooms
-            </mat-icon>
+            <mat-icon>smoking_rooms</mat-icon>
           </div>
-
           <div>
-            <h2>
-              Smoking
-            </h2>
-
-            <p>
-              Smoking information used by the Framingham model.
-            </p>
+            <h2>Smoking & Lifestyle</h2>
+            <p>Smoking habits used by the Framingham risk formula.</p>
           </div>
-
         </div>
 
-
         <div class="toggle-row">
-
           <div>
-            <strong>
-              Current smoker
-            </strong>
-
-            <em>
-              Does the patient currently smoke?
-            </em>
+            <strong>Current smoker</strong>
+            <em>Does the patient currently smoke cigarettes?</em>
           </div>
 
           <mat-slide-toggle
             color="primary"
-            [checked]="
-              form.controls.currentSmoker.value === 1
-            "
-            (change)="
-              form.controls.currentSmoker.setValue(
-                $event.checked ? 1 : 0
-              )
-            "
-          >
+            [checked]="form.controls.currentSmoker.value === 1"
+            (change)="form.controls.currentSmoker.setValue($event.checked ? 1 : 0)">
           </mat-slide-toggle>
-
         </div>
 
-
-        <mat-form-field
-          appearance="outline"
-          class="full-field"
-        >
-
-          <mat-label>
-            Cigarettes per day
-          </mat-label>
-
+        <mat-form-field appearance="outline" class="full-field">
+          <mat-label>Cigarettes per day</mat-label>
           <input
             matInput
             type="number"
@@ -262,594 +130,740 @@
             max="100"
             formControlName="cigsPerDay"
           />
-
+          <mat-hint>Enter 0 if the patient is a non-smoker</mat-hint>
         </mat-form-field>
-
       </section>
 
-
       <!-- ========================================================= -->
-      <!-- STEP 3 -->
+      <!-- STEP 3: Medical History -->
       <!-- ========================================================= -->
-
-      <section
-        *ngSwitchCase="3"
-        class="step-body"
-      >
-
+      <section *ngSwitchCase="3" class="step-body">
         <div class="step-intro">
-
           <div class="step-intro-icon">
-            <mat-icon>
-              medical_services
-            </mat-icon>
+            <mat-icon>medical_services</mat-icon>
           </div>
-
           <div>
-
-            <h2>
-              Medical History
-            </h2>
-
-            <p>
-              Select the conditions that apply to the patient.
-            </p>
-
+            <h2>Medical History</h2>
+            <p>Select documented conditions and ongoing treatments.</p>
           </div>
-
         </div>
-
 
         <div class="toggle-row">
-
           <div>
-            <strong>
-              Blood pressure medication
-            </strong>
-
-            <em>
-              Currently taking BP medication?
-            </em>
+            <strong>Blood pressure medication</strong>
+            <em>Currently prescribed antihypertensive drugs?</em>
           </div>
-
           <mat-slide-toggle
             color="primary"
-            [checked]="
-              form.controls.BPMeds.value === 1
-            "
-            (change)="
-              form.controls.BPMeds.setValue(
-                $event.checked ? 1 : 0
-              )
-            "
-          >
+            [checked]="form.controls.BPMeds.value === 1"
+            (change)="form.controls.BPMeds.setValue($event.checked ? 1 : 0)">
           </mat-slide-toggle>
-
         </div>
-
 
         <div class="toggle-row">
-
           <div>
-            <strong>
-              Previous stroke
-            </strong>
-
-            <em>
-              History of stroke?
-            </em>
+            <strong>Previous stroke</strong>
+            <em>Documented history of stroke or TIA?</em>
           </div>
-
           <mat-slide-toggle
             color="primary"
-            [checked]="
-              form.controls.prevalentStroke.value === 1
-            "
-            (change)="
-              form.controls.prevalentStroke.setValue(
-                $event.checked ? 1 : 0
-              )
-            "
-          >
+            [checked]="form.controls.prevalentStroke.value === 1"
+            (change)="form.controls.prevalentStroke.setValue($event.checked ? 1 : 0)">
           </mat-slide-toggle>
-
         </div>
-
 
         <div class="toggle-row">
-
           <div>
-            <strong>
-              Hypertension
-            </strong>
-
-            <em>
-              History of hypertension?
-            </em>
+            <strong>Hypertension</strong>
+            <em>Diagnosed hypertension condition?</em>
           </div>
-
           <mat-slide-toggle
             color="primary"
-            [checked]="
-              form.controls.prevalentHyp.value === 1
-            "
-            (change)="
-              form.controls.prevalentHyp.setValue(
-                $event.checked ? 1 : 0
-              )
-            "
-          >
+            [checked]="form.controls.prevalentHyp.value === 1"
+            (change)="form.controls.prevalentHyp.setValue($event.checked ? 1 : 0)">
           </mat-slide-toggle>
-
         </div>
-
 
         <div class="toggle-row">
-
           <div>
-            <strong>
-              Diabetes
-            </strong>
-
-            <em>
-              History of diabetes?
-            </em>
+            <strong>Diabetes</strong>
+            <em>Diagnosed Type 1 or Type 2 diabetes mellitus?</em>
           </div>
-
           <mat-slide-toggle
             color="primary"
-            [checked]="
-              form.controls.diabetes.value === 1
-            "
-            (change)="
-              form.controls.diabetes.setValue(
-                $event.checked ? 1 : 0
-              )
-            "
-          >
+            [checked]="form.controls.diabetes.value === 1"
+            (change)="form.controls.diabetes.setValue($event.checked ? 1 : 0)">
           </mat-slide-toggle>
-
         </div>
-
       </section>
 
-
       <!-- ========================================================= -->
-      <!-- STEP 4 -->
+      <!-- STEP 4: Clinical -->
       <!-- ========================================================= -->
-
-      <section
-        *ngSwitchCase="4"
-        class="step-body"
-      >
-
+      <section *ngSwitchCase="4" class="step-body">
         <div class="step-intro">
-
           <div class="step-intro-icon">
-
-            <mat-icon>
-              monitor_heart
-            </mat-icon>
-
+            <mat-icon>monitor_heart</mat-icon>
           </div>
-
           <div>
-
-            <h2>
-              Clinical Measurements
-            </h2>
-
-            <p>
-              Enter the patient's latest clinical readings.
-            </p>
-
+            <h2>Clinical Measurements</h2>
+            <p>Enter the patient's resting lab and biometric readings.</p>
           </div>
-
         </div>
-
 
         <div class="fields-grid">
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Total cholesterol
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              formControlName="totChol"
-            />
-
-            <span matTextSuffix>
-              mg/dL
-            </span>
-
+            <mat-label>Total cholesterol</mat-label>
+            <input matInput type="number" formControlName="totChol" />
+            <span matTextSuffix>mg/dL</span>
           </mat-form-field>
 
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Systolic BP
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              formControlName="sysBP"
-            />
-
-            <span matTextSuffix>
-              mmHg
-            </span>
-
+            <mat-label>Systolic BP</mat-label>
+            <input matInput type="number" formControlName="sysBP" />
+            <span matTextSuffix>mmHg</span>
           </mat-form-field>
 
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Diastolic BP
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              formControlName="diaBP"
-            />
-
-            <span matTextSuffix>
-              mmHg
-            </span>
-
+            <mat-label>Diastolic BP</mat-label>
+            <input matInput type="number" formControlName="diaBP" />
+            <span matTextSuffix>mmHg</span>
           </mat-form-field>
 
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              BMI
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              step="0.1"
-              formControlName="BMI"
-            />
-
+            <mat-label>BMI</mat-label>
+            <input matInput type="number" step="0.1" formControlName="BMI" />
+            <span matTextSuffix>kg/m²</span>
           </mat-form-field>
 
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Heart rate
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              formControlName="heartRate"
-            />
-
-            <span matTextSuffix>
-              bpm
-            </span>
-
+            <mat-label>Resting Heart rate</mat-label>
+            <input matInput type="number" formControlName="heartRate" />
+            <span matTextSuffix>bpm</span>
           </mat-form-field>
 
-
           <mat-form-field appearance="outline">
-
-            <mat-label>
-              Glucose
-            </mat-label>
-
-            <input
-              matInput
-              type="number"
-              formControlName="glucose"
-            />
-
-            <span matTextSuffix>
-              mg/dL
-            </span>
-
+            <mat-label>Fasting Glucose</mat-label>
+            <input matInput type="number" formControlName="glucose" />
+            <span matTextSuffix>mg/dL</span>
           </mat-form-field>
-
         </div>
-
       </section>
 
-
       <!-- ========================================================= -->
-      <!-- STEP 5 -->
+      <!-- STEP 5: ADDITIONAL CARDIAC INVESTIGATIONS (OPTIONAL) -->
       <!-- ========================================================= -->
-
-      <section
-        *ngSwitchCase="5"
-        class="step-body"
-      >
-
+      <section *ngSwitchCase="5" class="step-body">
         <div class="step-intro">
+          <div class="step-intro-icon investigation-icon">
+            <mat-icon>biotech</mat-icon>
+          </div>
+          <div class="intro-flex">
+            <div>
+              <h2>STEP 5: ADDITIONAL CARDIAC INVESTIGATIONS (OPTIONAL)</h2>
+              <p>
+                Enhance assessment accuracy with automated ECG report parsing and Treadmill Stress Test (TMT) analysis.
+                Both modules are strictly optional.
+              </p>
+            </div>
+            <button
+              type="button"
+              mat-stroked-button
+              color="warn"
+              class="skip-both-btn"
+              (click)="skipBothInvestigations()">
+              <mat-icon>fast_forward</mat-icon>
+              Skip Both & Proceed
+            </button>
+          </div>
+        </div>
 
-          <div class="step-intro-icon">
-            <mat-icon>
-              fact_check
-            </mat-icon>
+        <div class="investigations-container">
+
+          <!-- ------------------------------------------------------- -->
+          <!-- MODULE A: ECG REPORT ANALYSIS -->
+          <!-- ------------------------------------------------------- -->
+          <div class="investigation-card">
+            <div class="inv-card-head">
+              <div class="inv-title-area">
+                <span class="inv-badge">OPTIONAL MODULE A</span>
+                <h3>ECG REPORT ANALYSIS</h3>
+                <p>Upload your clinical ECG report in PDF format or enter available ECG measurements.</p>
+              </div>
+
+              <div class="mode-switcher">
+                <button
+                  type="button"
+                  class="mode-btn"
+                  [class.active]="ecgMode() === 'upload'"
+                  (click)="ecgMode.set('upload')">
+                  <mat-icon>upload_file</mat-icon> Upload PDF
+                </button>
+                <button
+                  type="button"
+                  class="mode-btn"
+                  [class.active]="ecgMode() === 'manual'"
+                  (click)="ecgMode.set('manual')">
+                  <mat-icon>edit_note</mat-icon> Manual Entry
+                </button>
+              </div>
+            </div>
+
+            <!-- MODE A: UPLOAD ECG PDF -->
+            @if (ecgMode() === 'upload') {
+              <div class="upload-zone">
+                @if (!ecgFileName()) {
+                  <label class="drop-target" for="ecg-file-input">
+                    <mat-icon class="drop-icon">cloud_upload</mat-icon>
+                    <strong>Upload ECG PDF Report</strong>
+                    <span>Click or drag and drop your clinical 12-lead ECG PDF (up to 10MB)</span>
+                    <input
+                      id="ecg-file-input"
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      (change)="onEcgFileSelected($event)"
+                      style="display: none;"
+                    />
+                  </label>
+                } @else {
+                  <div class="file-chip-card">
+                    <div class="file-info">
+                      <mat-icon class="file-icon">picture_as_pdf</mat-icon>
+                      <div>
+                        <strong>{{ ecgFileName() }}</strong>
+                        <span class="file-status">
+                          @if (ecgParsing()) {
+                            Parsing clinical parameters...
+                          } @else if (ecgExtracted()) {
+                            Extraction {{ ecgStatus() }}
+                          } @else {
+                            Report selected
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div class="file-actions">
+                      <button type="button" mat-button color="warn" (click)="clearEcg()">
+                        <mat-icon>delete</mat-icon> Remove
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @if (ecgParsing()) {
+                  <div class="parsing-spinner">
+                    <mat-spinner diameter="28"></mat-spinner>
+                    <span>Extracting heart rate, intervals (PR, QRS, QT/QTc), and rhythm abnormalities…</span>
+                  </div>
+                }
+
+                @if (ecgWarnings().length > 0) {
+                  <div class="extraction-warning-box">
+                    <mat-icon>warning_amber</mat-icon>
+                    <div>
+                      <strong>Extraction Notes & Warnings:</strong>
+                      <ul>
+                        @for (w of ecgWarnings(); track w) {
+                          <li>{{ w }}</li>
+                        }
+                      </ul>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- VERIFICATION & MEASUREMENT FORM (Applies to both modes) -->
+            <div class="verification-area" [formGroup]="ecgForm">
+              <div class="verif-header">
+                <strong>
+                  {{ ecgMode() === 'upload' ? 'Extracted ECG Values (Review & Edit):' : 'Enter Available ECG Measurements:' }}
+                </strong>
+                <span class="verif-hint">Leave unavailable parameters blank — they will not be marked as normal.</span>
+              </div>
+
+              <div class="fields-grid-3">
+                <mat-form-field appearance="outline">
+                  <mat-label>Heart Rate (bpm)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="heartRate"
+                    (input)="markFieldEdited('ecg', 'heartRate')"
+                  />
+                  <span matTextSuffix>bpm</span>
+                  @if (ecgFieldSources()['heartRate']) {
+                    <mat-hint class="source-hint">Source: {{ ecgFieldSources()['heartRate'] }}</mat-hint>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>PR Interval</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="prInterval"
+                    (input)="markFieldEdited('ecg', 'prInterval')"
+                  />
+                  <span matTextSuffix>ms</span>
+                  <mat-hint>Normal: 120–200 ms</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>QRS Duration</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="qrsDuration"
+                    (input)="markFieldEdited('ecg', 'qrsDuration')"
+                  />
+                  <span matTextSuffix>ms</span>
+                  <mat-hint>Normal: 60–100 ms</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>QT Interval (if available)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="qtInterval"
+                    (input)="markFieldEdited('ecg', 'qtInterval')"
+                  />
+                  <span matTextSuffix>ms</span>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>QTc Interval (Bazett/Hodges)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="qtcInterval"
+                    (input)="markFieldEdited('ecg', 'qtcInterval')"
+                  />
+                  <span matTextSuffix>ms</span>
+                  <mat-hint>Normal: &lt; 450 ms</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>ST-Segment Findings</mat-label>
+                  <mat-select formControlName="stFindings" (selectionChange)="markFieldEdited('ecg', 'stFindings')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option value="Normal">Normal isoelectric ST</mat-option>
+                    <mat-option value="ST Depression">ST Depression (Ischemia)</mat-option>
+                    <mat-option value="ST Elevation">ST Elevation (Acute Injury)</mat-option>
+                    <mat-option value="Non-specific ST Changes">Non-specific ST changes</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>T-Wave Findings</mat-label>
+                  <mat-select formControlName="tWaveFindings" (selectionChange)="markFieldEdited('ecg', 'tWaveFindings')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option value="Normal">Normal upright T-wave</mat-option>
+                    <mat-option value="T-Wave Inversion">T-Wave Inversion</mat-option>
+                    <mat-option value="Flattened T-Waves">Flattened T-Waves</mat-option>
+                    <mat-option value="Peaked T-Waves">Peaked T-Waves (Hyperkalemia/Ischemia)</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="span-2">
+                  <mat-label>Written Report Diagnosis / Interpretation</mat-label>
+                  <input
+                    matInput
+                    placeholder="e.g. Normal sinus rhythm, non-specific intraventricular conduction delay"
+                    formControlName="interpretation"
+                    (input)="markFieldEdited('ecg', 'interpretation')"
+                  />
+                </mat-form-field>
+              </div>
+
+              <div class="technical-notice">
+                <mat-icon>info</mat-icon>
+                <span>
+                  <strong>Clinical Notice:</strong> Text extraction parses reported clinical measurements and physician diagnoses.
+                  Raw 12-lead waveform signal processing is a distinct analytical pipeline and is not claimed by textual PDF extraction.
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div>
+          <!-- ------------------------------------------------------- -->
+          <!-- MODULE B: TREADMILL TEST (TMT) ANALYSIS -->
+          <!-- ------------------------------------------------------- -->
+          <div class="investigation-card">
+            <div class="inv-card-head">
+              <div class="inv-title-area">
+                <span class="inv-badge">OPTIONAL MODULE B</span>
+                <h3>TREADMILL TEST (TMT) ANALYSIS</h3>
+                <p>Upload your exercise stress test report or enter available exercise measurements.</p>
+              </div>
 
-            <h2>
-              Review Information
-            </h2>
+              <div class="mode-switcher">
+                <button
+                  type="button"
+                  class="mode-btn"
+                  [class.active]="tmtMode() === 'upload'"
+                  (click)="tmtMode.set('upload')">
+                  <mat-icon>upload_file</mat-icon> Upload PDF
+                </button>
+                <button
+                  type="button"
+                  class="mode-btn"
+                  [class.active]="tmtMode() === 'manual'"
+                  (click)="tmtMode.set('manual')">
+                  <mat-icon>edit_note</mat-icon> Manual Entry
+                </button>
+              </div>
+            </div>
 
-            <p>
-              Confirm the information before running the model.
-            </p>
+            <!-- MODE A: UPLOAD TMT PDF -->
+            @if (tmtMode() === 'upload') {
+              <div class="upload-zone">
+                @if (!tmtFileName()) {
+                  <label class="drop-target" for="tmt-file-input">
+                    <mat-icon class="drop-icon">cloud_upload</mat-icon>
+                    <strong>Upload TMT Exercise Stress PDF</strong>
+                    <span>Click or drag and drop your Bruce protocol or stress test report (up to 10MB)</span>
+                    <input
+                      id="tmt-file-input"
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      (change)="onTmtFileSelected($event)"
+                      style="display: none;"
+                    />
+                  </label>
+                } @else {
+                  <div class="file-chip-card">
+                    <div class="file-info">
+                      <mat-icon class="file-icon">picture_as_pdf</mat-icon>
+                      <div>
+                        <strong>{{ tmtFileName() }}</strong>
+                        <span class="file-status">
+                          @if (tmtParsing()) {
+                            Parsing exercise stress parameters...
+                          } @else if (tmtExtracted()) {
+                            Extraction {{ tmtStatus() }}
+                          } @else {
+                            Report selected
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div class="file-actions">
+                      <button type="button" mat-button color="warn" (click)="clearTmt()">
+                        <mat-icon>delete</mat-icon> Remove
+                      </button>
+                    </div>
+                  </div>
+                }
 
+                @if (tmtParsing()) {
+                  <div class="parsing-spinner">
+                    <mat-spinner diameter="28"></mat-spinner>
+                    <span>Extracting Duke Treadmill metrics, peak ST depression, and exercise capacity…</span>
+                  </div>
+                }
+
+                @if (tmtWarnings().length > 0) {
+                  <div class="extraction-warning-box">
+                    <mat-icon>warning_amber</mat-icon>
+                    <div>
+                      <strong>Extraction Notes & Warnings:</strong>
+                      <ul>
+                        @for (w of tmtWarnings(); track w) {
+                          <li>{{ w }}</li>
+                        }
+                      </ul>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- VERIFICATION & MEASUREMENT FORM (Applies to both modes) -->
+            <div class="verification-area" [formGroup]="tmtForm">
+              <div class="verif-header">
+                <strong>
+                  {{ tmtMode() === 'upload' ? 'Extracted TMT Values (Review & Edit):' : 'Enter Available Exercise Measurements:' }}
+                </strong>
+                <span class="verif-hint">Missing values are handled appropriately and never silently populated with normal numbers.</span>
+              </div>
+
+              <div class="fields-grid-3">
+                <mat-form-field appearance="outline">
+                  <mat-label>Exercise-Induced Angina</mat-label>
+                  <mat-select formControlName="exang" (selectionChange)="markFieldEdited('tmt', 'exang')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="0">No angina during exercise</mat-option>
+                    <mat-option [value]="1">Yes, angina induced during exercise</mat-option>
+                  </mat-select>
+                  <mat-hint>UCI / clinical feature: exang</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>ST Depression (oldpeak)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    step="0.1"
+                    formControlName="oldpeak"
+                    (input)="markFieldEdited('tmt', 'oldpeak')"
+                  />
+                  <span matTextSuffix>mm</span>
+                  <mat-hint>Exercise vs resting depression</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Peak ST Segment Slope</mat-label>
+                  <mat-select formControlName="slope" (selectionChange)="markFieldEdited('tmt', 'slope')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="1">1 - Upsloping (Low risk)</mat-option>
+                    <mat-option [value]="2">2 - Flat / Horizontal (Moderate/High)</mat-option>
+                    <mat-option [value]="3">3 - Downsloping (High ischemic risk)</mat-option>
+                  </mat-select>
+                  <mat-hint>UCI slope feature</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Max Heart Rate Achieved (thalach)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="thalach"
+                    (input)="markFieldEdited('tmt', 'thalach')"
+                  />
+                  <span matTextSuffix>bpm</span>
+                  <mat-hint>Peak exertion heart rate</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Resting ECG Finding (restecg)</mat-label>
+                  <mat-select formControlName="restecg" (selectionChange)="markFieldEdited('tmt', 'restecg')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="0">0 - Normal</mat-option>
+                    <mat-option [value]="1">1 - ST-T wave abnormality</mat-option>
+                    <mat-option [value]="2">2 - Left ventricular hypertrophy (LVH)</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>METs Achieved</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    step="0.5"
+                    formControlName="mets"
+                    (input)="markFieldEdited('tmt', 'mets')"
+                  />
+                  <span matTextSuffix>METs</span>
+                  <mat-hint>&gt; 10 METs = excellent prognosis</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Exercise Duration</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    step="0.5"
+                    formControlName="durationMinutes"
+                    (input)="markFieldEdited('tmt', 'durationMinutes')"
+                  />
+                  <span matTextSuffix>minutes</span>
+                  <mat-hint>Used for Duke Treadmill Score</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="span-2">
+                  <mat-label>Reported Exercise Conclusion / Diagnosis</mat-label>
+                  <input
+                    matInput
+                    placeholder="e.g. Negative for inducible ischemia at 87% MPHR"
+                    formControlName="reportedConclusion"
+                    (input)="markFieldEdited('tmt', 'reportedConclusion')"
+                  />
+                </mat-form-field>
+              </div>
+
+              <div class="technical-notice">
+                <mat-icon>info</mat-icon>
+                <span>
+                  <strong>ML Dataset Notice:</strong> TMT analysis utilizes the Duke Treadmill Score and a machine learning
+                  pipeline trained on the genuine UCI Heart Disease clinical dataset (evaluating angiographic CAD / inducible ischemia,
+                  distinct from Framingham 10-year CHD risk).
+                </span>
+              </div>
+            </div>
           </div>
 
         </div>
+      </section>
 
+      <!-- ========================================================= -->
+      <!-- STEP 6: Review Information -->
+      <!-- ========================================================= -->
+      <section *ngSwitchCase="6" class="step-body">
+        <div class="step-intro">
+          <div class="step-intro-icon">
+            <mat-icon>fact_check</mat-icon>
+          </div>
+          <div>
+            <h2>Review Information</h2>
+            <p>Confirm the details before running the predictive engines.</p>
+          </div>
+        </div>
 
         <div class="review-grid">
-
+          <!-- Personal -->
           <div class="review-group">
-
-            <h3>
-              Personal
-            </h3>
-
+            <h3><mat-icon>person</mat-icon> Personal</h3>
             <ul>
-
               <li>
                 <span>Age</span>
-                <strong>
-                  {{ form.controls.age.value }}
-                </strong>
+                <strong>{{ form.controls.age.value }} yrs</strong>
               </li>
-
               <li>
                 <span>Sex</span>
-                <strong>
-                  {{
-                    form.controls.male.value === 1
-                      ? 'Male'
-                      : 'Female'
-                  }}
-                </strong>
+                <strong>{{ form.controls.male.value === 1 ? 'Male' : 'Female' }}</strong>
               </li>
-
               <li>
                 <span>Education</span>
-                <strong>
-                  {{ form.controls.education.value }}
-                </strong>
+                <strong>Level {{ form.controls.education.value }}</strong>
               </li>
-
             </ul>
-
           </div>
 
-
+          <!-- Smoking -->
           <div class="review-group">
-
-            <h3>
-              Smoking
-            </h3>
-
+            <h3><mat-icon>smoking_rooms</mat-icon> Lifestyle</h3>
             <ul>
-
               <li>
                 <span>Current smoker</span>
-
-                <strong>
-                  {{
-                    form.controls.currentSmoker.value === 1
-                      ? 'Yes'
-                      : 'No'
-                  }}
-                </strong>
+                <strong>{{ form.controls.currentSmoker.value === 1 ? 'Yes' : 'No' }}</strong>
               </li>
-
               <li>
                 <span>Cigarettes/day</span>
-
-                <strong>
-                  {{ form.controls.cigsPerDay.value }}
-                </strong>
+                <strong>{{ form.controls.cigsPerDay.value }}</strong>
               </li>
-
             </ul>
-
           </div>
 
-
+          <!-- Medical History -->
           <div class="review-group">
-
-            <h3>
-              Medical History
-            </h3>
-
+            <h3><mat-icon>medical_services</mat-icon> Medical History</h3>
             <ul>
-
               <li>
                 <span>BP medication</span>
-                <strong>
-                  {{
-                    form.controls.BPMeds.value
-                      ? 'Yes'
-                      : 'No'
-                  }}
-                </strong>
+                <strong>{{ form.controls.BPMeds.value ? 'Yes' : 'No' }}</strong>
               </li>
-
               <li>
                 <span>Previous stroke</span>
-                <strong>
-                  {{
-                    form.controls.prevalentStroke.value
-                      ? 'Yes'
-                      : 'No'
-                  }}
-                </strong>
+                <strong>{{ form.controls.prevalentStroke.value ? 'Yes' : 'No' }}</strong>
               </li>
-
               <li>
                 <span>Hypertension</span>
-                <strong>
-                  {{
-                    form.controls.prevalentHyp.value
-                      ? 'Yes'
-                      : 'No'
-                  }}
-                </strong>
+                <strong>{{ form.controls.prevalentHyp.value ? 'Yes' : 'No' }}</strong>
               </li>
-
               <li>
                 <span>Diabetes</span>
-                <strong>
-                  {{
-                    form.controls.diabetes.value
-                      ? 'Yes'
-                      : 'No'
-                  }}
-                </strong>
+                <strong>{{ form.controls.diabetes.value ? 'Yes' : 'No' }}</strong>
               </li>
-
             </ul>
-
           </div>
 
-
+          <!-- Clinical -->
           <div class="review-group">
-
-            <h3>
-              Clinical
-            </h3>
-
+            <h3><mat-icon>monitor_heart</mat-icon> Clinical Measurements</h3>
             <ul>
-
               <li>
-                <span>Cholesterol</span>
-                <strong>
-                  {{ form.controls.totChol.value }}
-                  mg/dL
-                </strong>
+                <span>Total cholesterol</span>
+                <strong>{{ form.controls.totChol.value }} mg/dL</strong>
               </li>
-
               <li>
                 <span>Blood pressure</span>
-                <strong>
-                  {{ form.controls.sysBP.value }}
-                  /
-                  {{ form.controls.diaBP.value }}
-                </strong>
+                <strong>{{ form.controls.sysBP.value }} / {{ form.controls.diaBP.value }} mmHg</strong>
               </li>
-
               <li>
                 <span>BMI</span>
-                <strong>
-                  {{ form.controls.BMI.value }}
-                </strong>
+                <strong>{{ form.controls.BMI.value }} kg/m²</strong>
               </li>
-
               <li>
                 <span>Heart rate</span>
-                <strong>
-                  {{ form.controls.heartRate.value }}
-                  bpm
-                </strong>
+                <strong>{{ form.controls.heartRate.value }} bpm</strong>
               </li>
-
               <li>
                 <span>Glucose</span>
-                <strong>
-                  {{ form.controls.glucose.value }}
-                  mg/dL
-                </strong>
+                <strong>{{ form.controls.glucose.value }} mg/dL</strong>
               </li>
-
             </ul>
-
           </div>
 
+          <!-- Investigations Summary -->
+          <div class="review-group span-2">
+            <h3><mat-icon>biotech</mat-icon> Additional Investigations (Optional)</h3>
+            <ul>
+              <li>
+                <span>ECG Investigation</span>
+                <strong>
+                  @if (hasEcgData()) {
+                    <span class="status-provided">Provided (HR: {{ ecgForm.value.heartRate || 'N/A' }} bpm, ST: {{ ecgForm.value.stFindings }})</span>
+                  } @else {
+                    <span class="status-skipped">Skipped / Not provided</span>
+                  }
+                </strong>
+              </li>
+              <li>
+                <span>TMT Investigation</span>
+                <strong>
+                  @if (hasTmtData()) {
+                    <span class="status-provided">Provided (Max HR: {{ tmtForm.value.thalach || 'N/A' }} bpm, ST Dep: {{ tmtForm.value.oldpeak || 0 }} mm)</span>
+                  } @else {
+                    <span class="status-skipped">Skipped / Not provided</span>
+                  }
+                </strong>
+              </li>
+            </ul>
+          </div>
         </div>
-
       </section>
 
     </div>
 
-
     <!-- NAVIGATION -->
-
     <div class="form-nav">
-
       <button
         type="button"
         mat-stroked-button
         (click)="back()"
-        [disabled]="isFirstStep()"
-      >
-
-        <mat-icon>
-          arrow_back
-        </mat-icon>
-
+        [disabled]="isFirstStep()">
+        <mat-icon>arrow_back</mat-icon>
         Back
-
       </button>
 
-
       @if (!isLastStep()) {
-
         <button
           type="button"
           mat-flat-button
           color="primary"
-          (click)="next()"
-        >
-
+          (click)="next()">
           Continue
-
-          <mat-icon>
-            arrow_forward
-          </mat-icon>
-
+          <mat-icon>arrow_forward</mat-icon>
         </button>
-
       } @else {
-
         <button
           type="submit"
           mat-flat-button
           color="primary"
           class="predict-btn"
-          [disabled]="submitting()"
-        >
-
+          [disabled]="submitting()">
           @if (submitting()) {
-
             Analyzing...
-
           } @else {
             <ng-container>
-              <mat-icon>
-                favorite
-              </mat-icon>
-              <span>Run Prediction</span>
+              <mat-icon>favorite</mat-icon>
+              <span>Run Assessment</span>
             </ng-container>
           }
-
         </button>
-
       }
-
     </div>
 
   </form>

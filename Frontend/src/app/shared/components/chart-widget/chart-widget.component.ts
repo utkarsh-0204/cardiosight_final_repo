@@ -11,6 +11,8 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
+  inject,
+  NgZone,
 } from '@angular/core';
 import type { ChartConfiguration } from 'chart.js';
 import { Chart } from './chart.config';
@@ -58,6 +60,7 @@ export interface ChartDataset {
 })
 export class ChartWidgetComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
+  private readonly ngZone = inject(NgZone);
 
   @Input({ required: true }) kind!: ChartKind;
   @Input() labels: string[] = [];
@@ -67,6 +70,8 @@ export class ChartWidgetComponent implements AfterViewInit, OnChanges, OnDestroy
   @Input() ariaLabel = 'Chart';
 
   private chart?: Chart;
+  private prevLabelsKey = '';
+  private prevDataKey = '';
 
   get chartFallbackLabel(): string {
     return this.ariaLabel;
@@ -77,23 +82,42 @@ export class ChartWidgetComponent implements AfterViewInit, OnChanges, OnDestroy
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.chart && changes['labels'] || changes['datasets']) {
-      this.render();
+    if (!this.chart) return;
+
+    if (changes['labels'] || changes['datasets'] || changes['options']) {
+      const labelsKey = (this.labels || []).join('|');
+      const dataKey = (this.datasets || [])
+        .map((d) => `${d.label || ''}:${(d.data || []).join(',')}`)
+        .join(';');
+
+      if (labelsKey !== this.prevLabelsKey || dataKey !== this.prevDataKey) {
+        this.prevLabelsKey = labelsKey;
+        this.prevDataKey = dataKey;
+        this.render();
+      }
     }
   }
 
   ngOnDestroy(): void {
-    this.chart?.destroy();
+    this.ngZone.runOutsideAngular(() => {
+      this.chart?.destroy();
+      this.chart = undefined;
+    });
   }
 
   private render(): void {
     if (!this.canvasRef?.nativeElement) return;
 
+    this.prevLabelsKey = (this.labels || []).join('|');
+    this.prevDataKey = (this.datasets || [])
+      .map((d) => `${d.label || ''}:${(d.data || []).join(',')}`)
+      .join(';');
+
     const mergedOptions: ChartWidgetOptions = {
       responsive: true,
       maintainAspectRatio: false,
       animation: {
-        duration: 900,
+        duration: 400,
         easing: 'easeOutQuart',
       },
       ...this.options,
@@ -105,12 +129,15 @@ export class ChartWidgetComponent implements AfterViewInit, OnChanges, OnDestroy
       options: mergedOptions,
     };
 
-    if (this.chart) {
-      this.chart.data = config.data;
-      this.chart.options = mergedOptions;
-      this.chart.update();
-    } else {
-      this.chart = new Chart(this.canvasRef.nativeElement, config);
-    }
+    this.ngZone.runOutsideAngular(() => {
+      if (this.chart) {
+        this.chart.data = config.data;
+        this.chart.options = mergedOptions;
+        this.chart.update();
+      } else {
+        this.chart = new Chart(this.canvasRef.nativeElement, config);
+      }
+    });
   }
 }
+

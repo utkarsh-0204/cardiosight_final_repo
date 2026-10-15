@@ -41,6 +41,9 @@ export class ToastService {
   }
 
   private push(type: ToastType, title: string, message: string | undefined, duration: number): void {
+    const isDuplicate = this.toasts().some((t) => t.type === type && t.title === title && t.message === message);
+    if (isDuplicate) return;
+
     const toast: Toast = { id: this.nextId++, type, title, message, duration };
     this.toasts.update((list) => [...list.slice(-3), toast]);
     setTimeout(() => this.dismiss(toast.id), duration);

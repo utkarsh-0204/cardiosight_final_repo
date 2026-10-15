@@ -4,6 +4,8 @@
 const pool = require("../config/db");
 const { asyncHandler, HttpError } = require("../middleware/errorHandler");
 const mlService = require("../services/mlService");
+const ecgService = require("../services/ecgService");
+const tmtService = require("../services/tmtService");
 
 // ---------------------------------------------------------------------------
 // Framingham validation
@@ -104,6 +106,7 @@ function validatePredictionInput(body) {
  * GET  /api/predict/:id
  */
 function serializeResult(row) {
+  const input = row.input || {};
   return {
     id: row.id,
     riskScore: Number(row.risk_score),
@@ -112,7 +115,9 @@ function serializeResult(row) {
     diseaseProbability: Number(row.probability),
     recommendations: row.recommendations || [],
     contributingFactors: row.contributing_factors || [],
-    input: row.input || {},
+    input: input,
+    ecg: input.ecg || null,
+    tmt: input.tmt || null,
     submittedAt: new Date(row.created_at).toISOString(),
   };
 }
@@ -178,10 +183,38 @@ const createPrediction = asyncHandler(async (req, res) => {
   // 1. Validate Framingham input
   const input = validatePredictionInput(req.body);
 
-  // 2. Send input to ML service
+  // 2. Process optional ECG investigation if provided
+  let ecgFindings = null;
+  if (req.body.ecg && typeof req.body.ecg === 'object' && Object.keys(req.body.ecg).length > 0) {
+    try {
+      ecgFindings = ecgService.evaluateEcgFindings(req.body.ecg);
+    } catch (err) {
+      console.warn('ECG evaluation failed; continuing without blocking Framingham prediction:', err.message);
+      ecgFindings = {
+        status: 'error',
+        warnings: ['ECG evaluation error: ' + err.message],
+      };
+    }
+  }
+
+  // 3. Process optional TMT investigation if provided
+  let tmtFindings = null;
+  if (req.body.tmt && typeof req.body.tmt === 'object' && Object.keys(req.body.tmt).length > 0) {
+    try {
+      tmtFindings = await tmtService.analyzeTmt(req.body.tmt);
+    } catch (err) {
+      console.warn('TMT analysis failed; continuing without blocking Framingham prediction:', err.message);
+      tmtFindings = {
+        status: 'error',
+        warnings: ['TMT analysis error: ' + err.message],
+      };
+    }
+  }
+
+  // 4. Send Framingham input to ML service
   const result = await mlService.predict(input);
 
-  // 3. Resolve patient
+  // 5. Resolve patient
   let patientId = null;
 
   const { rows: patientRows } = await pool.query(
@@ -200,7 +233,18 @@ const createPrediction = asyncHandler(async (req, res) => {
     patientId = created[0].id;
   }
 
-  // 4. Save prediction
+  // 6. Build stored input with optional investigation payloads
+  const storedInput = {
+    ...input,
+  };
+  if (ecgFindings) {
+    storedInput.ecg = ecgFindings;
+  }
+  if (tmtFindings) {
+    storedInput.tmt = tmtFindings;
+  }
+
+  // 7. Save prediction
   const { rows } = await pool.query(
     `INSERT INTO predictions
        (
@@ -242,7 +286,7 @@ const createPrediction = asyncHandler(async (req, res) => {
       result.confidence,
       result.diseaseProbability,
 
-      JSON.stringify(input),
+      JSON.stringify(storedInput),
       JSON.stringify(result.recommendations),
       JSON.stringify(result.contributingFactors),
     ]
@@ -281,6 +325,86 @@ const getPrediction = asyncHandler(async (req, res) => {
     message: "Prediction retrieved.",
     data: serializeResult(rows[0]),
   });
+});
+
+// ---------------------------------------------------------------------------
+// Get Prediction Explanation (XAI via SHAP)
+// ---------------------------------------------------------------------------
+
+// In-flight explanation promises to prevent duplicate concurrent calculations
+const inFlightExplanations = new Map();
+
+/**
+ * GET /api/predict/:id/explain
+ */
+const getPredictionExplanation = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT *
+     FROM predictions
+     WHERE id = $1
+       AND user_id = $2`,
+    [req.params.id, req.user.id]
+  );
+
+  if (rows.length === 0) {
+    throw new HttpError(404, "Prediction not found.");
+  }
+
+  const predictionRecord = rows[0];
+
+  // 1. Check if explanation is already cached in database
+  if (predictionRecord.explanation && typeof predictionRecord.explanation === 'object') {
+    return res.json({
+      success: true,
+      message: "Prediction explanation retrieved.",
+      data: {
+        predictionId: predictionRecord.id,
+        submittedAt: new Date(predictionRecord.created_at).toISOString(),
+        ...predictionRecord.explanation,
+      },
+    });
+  }
+
+  // 2. Prevent duplicate concurrent requests using in-flight promise registry
+  const cacheKey = `${predictionRecord.id}`;
+  let explainPromise = inFlightExplanations.get(cacheKey);
+
+  if (!explainPromise) {
+    const input = predictionRecord.input || {};
+    explainPromise = (async () => {
+      const explanation = await mlService.explain(input);
+
+      // Asynchronously cache valid explanation to PostgreSQL
+      try {
+        await pool.query(
+          "UPDATE predictions SET explanation = $1 WHERE id = $2",
+          [JSON.stringify(explanation), predictionRecord.id]
+        );
+      } catch (cacheErr) {
+        console.warn("[predictionController] Failed to persist explanation cache:", cacheErr.message);
+      }
+
+      return explanation;
+    })();
+
+    inFlightExplanations.set(cacheKey, explainPromise);
+  }
+
+  try {
+    const explanation = await explainPromise;
+
+    res.json({
+      success: true,
+      message: "Prediction explanation retrieved.",
+      data: {
+        predictionId: predictionRecord.id,
+        submittedAt: new Date(predictionRecord.created_at).toISOString(),
+        ...explanation,
+      },
+    });
+  } finally {
+    inFlightExplanations.delete(cacheKey);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -452,6 +576,7 @@ const deleteHistoryItem = asyncHandler(async (req, res) => {
 module.exports = {
   createPrediction,
   getPrediction,
+  getPredictionExplanation,
   listHistory,
   getHistoryItem,
   deleteHistoryItem,

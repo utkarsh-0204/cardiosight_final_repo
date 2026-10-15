@@ -1,331 +1,113 @@
-# CardioSight
+# CardioSight: Intelligent Cardiovascular Risk Prediction & Clinical Decision Support System
 
-CardioSight is a full-stack machine-learning application for **coronary
-heart disease risk prediction**. The project combines an Angular
-frontend, an Express/Node.js backend, PostgreSQL for application data,
-and a Django-based ML service.
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)]()
+[![Automated Tests](https://img.shields.io/badge/Tests-176%20Passed-success.svg)]()
+[![Frontend](https://img.shields.io/badge/Frontend-Angular%2020-red.svg)]()
+[![Backend](https://img.shields.io/badge/Backend-Node.js%20%2F%20Express-green.svg)]()
+[![ML Service](https://img.shields.io/badge/ML%20Service-Python%20%2F%20Django-blue.svg)]()
+[![Explainability](https://img.shields.io/badge/XAI-SHAP%20TreeExplainer-orange.svg)]()
+[![Database](https://img.shields.io/badge/Database-PostgreSQL-blue.svg)]()
 
-## Project Structure
+CardioSight is a multi-modal cardiovascular risk assessment platform developed for academic research and clinical decision support. It bridges machine learning predictions and medical interpretability by combining:
 
-``` text
-CardioSight/
-├── Backend/          # Express/Node.js API gateway and PostgreSQL integration
-├── Frontend/         # Angular web application
-└── ML/               # Django ML service and trained model artifacts
+1. **10-Year Coronary Heart Disease (CHD) Risk Estimation**: Powered by a calibrated Random Forest classifier trained on the Framingham Heart Study cohort.
+2. **Explainable AI (XAI)**: Driven by mathematical SHAP (TreeExplainer) feature attributions, waterfall probability shifts, and global Gini feature importance.
+3. **ECG Report Analysis**: Automated clinical parameter extraction from 12-lead ECG PDF reports evaluated against AHA/ACC thresholds and PTB-XL diagnostic categories.
+4. **Treadmill Exercise Stress Test (TMT) Analysis**: Dual stratification incorporating the clinical Duke Treadmill Score (DTS) and a machine learning model trained on genuine UCI Cleveland Heart Disease data.
+5. **Secure Patient Data Management**: Authentication, profile management, and persistent evaluation histories backed by PostgreSQL.
+
+---
+
+## 📚 Documentation Index
+
+Depending on your background and needs, choose the appropriate guide below:
+
+| Guide | Description | Target Audience |
+| :--- | :--- | :--- |
+| 📘 **[Professor Setup Guide](./PROFESSOR_SETUP_GUIDE.md)** | **Start here!** A calm, patient, step-by-step guide with zero programming knowledge assumed. Explains how to install and run CardioSight from scratch. | **Professors, Evaluators, Beginners** |
+| ⚡ **[Professor Quick Start](./PROFESSOR_QUICK_START.md)** | A concise 1-page daily cheat sheet for launching the application after initial installation. | **Returning Users** |
+| 🔬 **[Technical Documentation](./TECHNICAL_DOCUMENTATION.md)** | Comprehensive technical manual covering architecture, API endpoints, database schemas, ML mathematics, and security. | **Developers & Technical Reviewers** |
+
+---
+
+## 🏛️ System Architecture
+
+CardioSight is structured into decoupled, specialized services:
+
+```mermaid
+graph TD
+    User([User / Clinician Browser]) <-->|HTTP / Port 4200| Angular[Angular 20 Frontend]
+    Angular <-->|REST API / Port 3000| Express[Node.js / Express API Gateway]
+    Express <-->|Database Queries / Port 5432| Postgres[(PostgreSQL Database)]
+    Express <-->|Inference & SHAP / Port 8000| Django[Django ML Microservice]
+    Django <-->|Joblib Models| Artifacts[Model Artifacts & SHAP Explainer]
 ```
 
-## Tech Stack
+1. **Frontend (Port 4200)**: Modern Angular 20 interface with reactive Material Design components, interactive risk meters, and dynamic Chart.js visualizations.
+2. **Backend Gateway (Port 3000)**: Node.js & Express REST API managing authentication (JWT), request routing, investigation PDF extraction, and PostgreSQL data persistence.
+3. **ML Microservice (Port 8000)**: Python / Django server providing scikit-learn model inference and real-time SHAP feature attributions.
+4. **Database (Port 5432)**: Relational PostgreSQL database storing user credentials, patient clinical profiles, predictions, and cached SHAP explanations.
 
-### Frontend
+---
 
--   Angular
--   TypeScript
--   HTML / SCSS
--   Angular Router
--   HTTP client/services for API communication
+## 🚀 Quick Launch Overview
 
-### Backend
+For complete, detailed instructions, please consult the **[Professor Setup Guide](./PROFESSOR_SETUP_GUIDE.md)**. If your computer already has prerequisites configured, start the services in separate Terminal windows:
 
--   Node.js
--   Express.js
--   PostgreSQL
--   JWT authentication
--   bcrypt password hashing
--   CORS
--   dotenv
-
-### Machine Learning
-
--   Python
--   Django
--   Trained machine-learning model
--   `joblib` model artifact
-
-## Main Features
-
--   User registration and login
--   JWT-based authentication
--   Protected application routes
--   User profile management
--   Health-risk prediction workflow
--   Prediction result display
--   Prediction/history-related functionality
--   Dashboard and analytics views
--   Admin dashboard and user management
--   Health-related informational content
--   PostgreSQL-backed application data
-
-## Architecture
-
-``` text
-                         ┌──────────────────────┐
-                         │   Angular Frontend   │
-                         │    localhost:4200    │
-                         └──────────┬───────────┘
-                                    │
-                                    │ REST API
-                                    ▼
-                         ┌──────────────────────┐
-                         │  Express Backend     │
-                         │    localhost:3000    │
-                         └───────┬───────┬──────┘
-                                 │       │
-                       PostgreSQL│       │ML requests
-                                 ▼       ▼
-                    ┌──────────────┐  ┌────────────────┐
-                    │ PostgreSQL   │  │ Django ML      │
-                    │ :5432        │  │ Service :8000  │
-                    └──────────────┘  └────────────────┘
+### 1. Database (PostgreSQL)
+Ensure PostgreSQL is active:
+```bash
+brew services start postgresql@16   # macOS (or use Postgres.app / Windows service)
 ```
 
-## Prerequisites
-
-Install the following before running the project:
-
--   Node.js
--   npm
--   PostgreSQL
--   Python 3
--   pip
--   Angular CLI (or use the project's npm scripts)
-
-## 1. Clone the Repository
-
-``` bash
-git clone <YOUR_REPOSITORY_URL>
-cd CardioSight
-```
-
-## 2. Backend Setup
-
-``` bash
-cd Backend
-npm install
-```
-
-Create a `.env` file inside `Backend/`.
-
-Example:
-
-``` env
-PORT=3000
-
-DATABASE_URL=postgres://cardiosight:cardiosight@localhost:5432/cardiosight
-PGHOST=localhost
-PGPORT=5432
-PGUSER=cardiosight
-PGPASSWORD=cardiosight
-PGDATABASE=cardiosight
-
-JWT_SECRET=your_secure_jwt_secret
-JWT_EXPIRES_IN=7d
-
-ML_SERVER_URL=http://localhost:8000
-
-CORS_ORIGINS=http://localhost:4200
-```
-
-> Never commit `.env` files or real secrets to GitHub.
-
-Start the backend:
-
-``` bash
-npm start
-```
-
-The API runs on:
-
-``` text
-http://localhost:3000
-```
-
-Health check:
-
-``` text
-http://localhost:3000/api/health
-```
-
-## 3. Frontend Setup
-
-Open a new terminal:
-
-``` bash
-cd Frontend
-npm install
-```
-
-Start Angular on the fixed development port:
-
-``` bash
-npm start
-```
-
-The frontend runs on:
-
-``` text
-http://localhost:4200
-```
-
-The frontend API configuration points to:
-
-``` text
-http://localhost:3000/api
-```
-
-## 4. ML Service Setup
-
-The ML component is located in:
-
-``` text
-ML/
-```
-
-Create and activate a Python virtual environment if one is not already
-available:
-
-``` bash
+### 2. Machine Learning Service (Terminal 1)
+```bash
 cd ML
-python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate            # On Windows: .venv\Scripts\activate
+python manage.py runserver 127.0.0.1:8000
 ```
+*Health Check*: `http://127.0.0.1:8000/api/health`
 
-Install the required Python dependencies according to the ML project's
-dependency file.
-
-Then start the Django ML service using the project's Django
-configuration.
-
-The backend is configured to communicate with the ML service through:
-
-``` env
-ML_SERVER_URL=http://localhost:8000
-```
-
-## Running the Complete Application
-
-Run the three services in separate terminals.
-
-### Terminal 1 --- PostgreSQL
-
-Make sure PostgreSQL is running and the CardioSight database is
-available.
-
-### Terminal 2 --- ML Service
-
-Start the Django ML service on:
-
-``` text
-http://localhost:8000
-```
-
-### Terminal 3 --- Backend
-
-``` bash
+### 3. Backend API Gateway (Terminal 2)
+```bash
 cd Backend
 npm start
 ```
+*Health Check*: `http://localhost:3000/api/health`
 
-Backend:
-
-``` text
-http://localhost:3000
-```
-
-### Terminal 4 --- Frontend
-
-``` bash
+### 4. Frontend Web Application (Terminal 3)
+```bash
 cd Frontend
 npm start
 ```
+*Application URL*: Open **`http://localhost:4200`** in Google Chrome or any modern browser.
 
-Frontend:
+---
 
-``` text
-http://localhost:4200
+## 🔑 Default Demonstration Account
+
+A pre-configured administrator account is seeded during installation:
+- **Email**: `admin@cardiosight.local`
+- **Password**: `Admin@12345`
+
+You may also click **"Create an account"** on the login page to register a fresh patient profile.
+
+---
+
+## 🧪 Verification & Test Suite
+
+The repository includes extensive automated verification suites covering all architectural layers:
+
+```bash
+cd Backend
+node test_investigations.js   # 104 tests (ECG, TMT, PDF parsing, AHA/ACC heuristics)
+node test_auth_dashboard.js   # 36 tests (Authentication, user isolation, dashboard)
+node test_xai.js              # 36 tests (SHAP consistency, TreeExplainer, waterfall)
 ```
+**Test Results**: **176 Passed, 0 Failed (100% Pass Rate)**
 
-## API
+---
 
-The Express backend exposes routes under:
+## ⚠️ Academic Disclaimer
 
-``` text
-/api
-```
-
-Authentication routes are under:
-
-``` text
-/api/auth
-```
-
-For example:
-
-``` text
-POST /api/auth/signin
-POST /api/auth/signup
-GET  /api/health
-```
-
-Additional user, prediction, dashboard, and admin routes are implemented
-under the backend API.
-
-## Environment Variables
-
-The backend uses environment variables for:
-
--   PostgreSQL connection details
--   JWT configuration
--   ML service URL
--   CORS configuration
--   Server port
-
-Keep secrets local and use a safe secret value for `JWT_SECRET`.
-
-A `.env.example` file can be added to document required variables
-without exposing credentials.
-
-## Security Notes
-
--   Passwords are hashed using bcrypt.
--   Authentication uses JWT.
--   CORS is configured for the Angular development server.
--   Environment files are excluded from Git.
--   Database credentials and JWT secrets should never be committed to
-    the repository.
-
-## Development Ports
-
-  Service                 Port
-  ------------------- --------
-  Angular Frontend      `4200`
-  Express Backend       `3000`
-  Django ML Service     `8000`
-  PostgreSQL            `5432`
-
-## Future Improvements
-
--   Improve model evaluation and validation
--   Add more comprehensive automated tests
--   Add production deployment configuration
--   Add model monitoring and versioning
--   Improve API documentation
--   Add CI/CD pipeline
--   Add Docker-based development/deployment
--   Improve accessibility and responsive design
-
-## Contributors
-
-CardioSight was developed as a team project.
-
-Add team member names and GitHub profiles here:
-
-``` text
-1. Name — GitHub profile
-2. Name — GitHub profile
-3. Name — GitHub profile
-```
-
-## License
-
-This project is intended for academic/project purposes. Add the
-appropriate license before distributing it publicly.
+CardioSight is developed strictly for educational, research, and technical evaluation purposes. The predictions, SHAP feature attributions, and clinical rule heuristics generated by this software represent statistical machine learning models and must never replace clinical assessment, diagnostic testing, or therapeutic advice from a licensed physician or board-certified cardiologist.

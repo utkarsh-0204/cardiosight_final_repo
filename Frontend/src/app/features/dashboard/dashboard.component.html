@@ -7,9 +7,13 @@
     </span>
     <h1>How is your heart today?</h1>
     <p>
-      Your latest assessment shows a <strong>{{ summary()?.riskLevel | riskLabel }}</strong>
-      with a health score of <strong>{{ summary()?.healthScore }}/100</strong>.
-      Run a new prediction or review your insights below.
+      @if (summary()?.recentPredictions?.length) {
+        Your latest assessment shows a <strong>{{ summary()?.riskLevel | riskLabel }}</strong>
+        with a health score of <strong>{{ summary()?.healthScore }}/100</strong>.
+        Run a new prediction or review your insights below.
+      } @else {
+        No assessments recorded yet. Run your first prediction to calculate your personalized coronary health score and clinical insights.
+      }
     </p>
     <div class="welcome-actions">
       <button mat-flat-button color="primary" (click)="goPredict()">
@@ -123,9 +127,9 @@
     <section class="card panel health-panel">
       <h2 class="panel-title">Health score</h2>
       <div class="health-ring-wrap">
-        <app-circular-progress [value]="summary()?.healthScore ?? 0" [color]="healthScoreColor()" [size]="170" [strokeWidth]="12">
-          <strong class="ring-value">{{ summary()?.healthScore ?? 0 }}</strong>
-          <span class="ring-label">out of 100</span>
+        <app-circular-progress [value]="summary()?.recentPredictions?.length ? (summary()?.healthScore ?? 0) : 0" [color]="healthScoreColor()" [size]="170" [strokeWidth]="12">
+          <strong class="ring-value">{{ summary()?.recentPredictions?.length ? (summary()?.healthScore ?? 0) : '—' }}</strong>
+          <span class="ring-label">{{ summary()?.recentPredictions?.length ? 'out of 100' : 'no score yet' }}</span>
         </app-circular-progress>
       </div>
       <div class="metric-list">
