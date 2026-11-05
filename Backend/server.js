@@ -10,14 +10,35 @@ const app = express();
 
 app.use(express.json());
 
-// CORS – allow the Angular dev server (and any extra origins from .env).
-const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:4200")
+// CORS – allow Angular dev server, production custom domain, and exact Render frontend.
+const userOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+const allowedOrigins = Array.from(
+  new Set([
+    "http://localhost:4200",
+    "https://cardiosight.in",
+    "https://www.cardiosight.in",
+    "https://cardiosight-frontend.onrender.com",
+    ...userOrigins,
+  ])
+);
+
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, server-to-server)
+      if (!origin) return callback(null, true);
+      // Allow explicitly defined origins
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow localhost with any port in development
+      if (process.env.NODE_ENV !== "production" && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   })
 );

@@ -39,7 +39,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CORS_ORIGINS
-        value: https://cardiosight.in,https://www.cardiosight.in
+        value: https://cardiosight.in,https://www.cardiosight.in,https://cardiosight-frontend.onrender.com
       - key: ML_SERVER_URL
         fromService:
           type: web
