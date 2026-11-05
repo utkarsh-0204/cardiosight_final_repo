@@ -8,7 +8,7 @@ export interface Environment {
 
 export const environment: Environment = {
   production: true,
-  apiUrl: 'https://cardiosight-api.onrender.com/api',
+  apiUrl: 'https://cardiosight-api-tyke.onrender.com/api',
   mlApiUrl: 'https://cardiosight-ml.onrender.com',
   useMock: false,
   mockDelay: 0,
