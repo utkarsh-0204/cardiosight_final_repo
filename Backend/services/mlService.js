@@ -5,10 +5,16 @@
 
 const axios = require("axios");
 
-const ML_URL = (process.env.ML_SERVER_URL || "http://127.0.0.1:8000").replace(
-  /\/$/,
-  ""
-);
+function normalizeUrl(rawUrl) {
+  if (!rawUrl) return "http://127.0.0.1:8000";
+  let u = rawUrl.trim().replace(/\/$/, "");
+  if (!u.startsWith("http://") && !u.startsWith("https://")) {
+    u = `https://${u}`;
+  }
+  return u;
+}
+
+const ML_URL = normalizeUrl(process.env.ML_SERVER_URL);
 
 const ML_PREDICT_URL = `${ML_URL}/api/predict`;
 

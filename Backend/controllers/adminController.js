@@ -574,8 +574,10 @@ const getSystemHealth = asyncHandler(async (req, res) => {
   let mlLatency = 0;
   let mlDetails = null;
 
+  const rawMlUrl = (process.env.ML_SERVER_URL || 'http://127.0.0.1:8000').trim().replace(/\/$/, '');
+  const mlBaseUrl = rawMlUrl.startsWith('http://') || rawMlUrl.startsWith('https://') ? rawMlUrl : `https://${rawMlUrl}`;
   try {
-    const mlRes = await axios.get('http://127.0.0.1:8000/api/health', { timeout: 3000 });
+    const mlRes = await axios.get(`${mlBaseUrl}/api/health`, { timeout: 3000 });
     mlLatency = Date.now() - startMl;
     mlDetails = {
       status: mlRes.data?.status || 'up',
