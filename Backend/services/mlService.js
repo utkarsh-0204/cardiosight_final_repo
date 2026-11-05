@@ -160,16 +160,33 @@ function buildRecommendations(input, level) {
   return [...new Set(recommendations)].slice(0, 6);
 }
 
+/**
+ * Standard Framingham / NCEP ATP III 10-Year CHD Risk Stratification:
+ * - Low Risk: < 10%
+ * - Moderate / Intermediate Risk: 10% to < 20%
+ * - High Risk: >= 20% (CHD Risk Equivalent requiring intensive prevention)
+ * @param {number} probability 10-year CHD probability percentage (0-100)
+ * @returns {'low' | 'medium' | 'high'}
+ */
+function calculateRiskLevel(probability) {
+  const prob = Number(probability) || 0;
+  if (prob >= 20) return "high";
+  if (prob >= 10) return "medium";
+  return "low";
+}
+
 // ---------------------------------------------------------------------------
 // Prediction
 // ---------------------------------------------------------------------------
 
-async function predict(input) {
+async function predict(input, options = {}) {
   try {
+    const modelVersion = options.modelVersion || process.env.FRAMINGHAM_MODEL_VERSION || "v1";
     const { data } = await axios.post(
       ML_PREDICT_URL,
       {
         features: input,
+        model_version: modelVersion,
       },
       {
         timeout: 15000,
@@ -185,8 +202,7 @@ async function predict(input) {
     const probability = Number(data.probability);
     const riskScore = Number(data.risk_score);
 
-    const riskLevel =
-  probability >= 60 ? "high" : probability >= 35 ? "medium" : "low";
+    const riskLevel = calculateRiskLevel(probability);
 
     return {
       riskScore: Math.round(riskScore),
@@ -196,6 +212,12 @@ async function predict(input) {
       confidence: Math.round(Number(data.confidence ?? 0)),
 
       diseaseProbability: Math.round(probability),
+
+      rawProbability: probability,
+
+      modelVersion: data.model_version || "v1_original",
+
+      artifactUsed: data.artifact_used || "model.joblib",
 
       recommendations: buildRecommendations(input, riskLevel),
 
@@ -274,5 +296,6 @@ async function explain(input) {
 module.exports = {
   predict,
   explain,
+  calculateRiskLevel,
   extractFraminghamFeatures,
 };

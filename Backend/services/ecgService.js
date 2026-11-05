@@ -2,6 +2,7 @@
 // ECG Service
 // Extracts, normalizes, and evaluates ECG clinical findings from report text
 // based on AHA/ACC/HRS electrocardiology standards and PTB-XL diagnostic ontology.
+// Supports both 12-lead standard clinical ECGs and single-lead wearable reports (e.g. WHOOP, Apple Watch).
 // =============================================================================
 
 /**
@@ -28,20 +29,77 @@ function cleanReportText(text) {
 /**
  * Extracts a numeric value for heart rate / pulse rate in bpm.
  * Matches:
+ * "57 BPM Average Heart Rate", "57 BPM \n Average Heart Rate",
  * "Heart Rate: 72 bpm", "Heart rate (bpm): 75", "Heart rate (bpm) 75",
- * "Vent. Rate: 68", "Ventricular Rate: 82 BPM", "HR: 84", "Pulse: 76 bpm"
+ * "Vent. Rate: 68", "Ventricular Rate: 82 BPM", "HR: 84", "Pulse: 76 bpm",
+ * "Average Heart Rate: 57", "Average Heart Rate 57 bpm"
  * Does NOT match "Heart rate (bpm) Not provided"
  * @param {string} text
  */
 function extractHeartRate(text) {
-  const re = /(?:ventricular\s+rate|vent\.?\s*rate|heart\s+rate|pulse(?:\s+rate)?|\bhr\b)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{2,3})(?!\d)/i;
-  const match = text.match(re);
-  if (!match) return null;
+  if (!text) return null;
 
-  // Verify the following text isn't "not provided"
-  const num = Number.parseInt(match[1], 10);
-  if (Number.isFinite(num) && num >= 25 && num <= 300) {
-    return num;
+  // 1. Prefix pattern (common in wearables like WHOOP, Apple Watch): "57 BPM \n Average Heart Rate"
+  const prefixMatch = text.match(/(\d{2,3})\s*bpm\s*(?:\r?\n|[ \t])+(?:average\s+)?(?:heart\s+rate|pulse(?:\s+rate)?|\bhr\b)/i);
+  if (prefixMatch) {
+    const num = Number.parseInt(prefixMatch[1], 10);
+    if (Number.isFinite(num) && num >= 25 && num <= 300) return num;
+  }
+
+  // 2. Explicit label with colon or equals: "Average Heart Rate: 57", "Heart Rate: 72 bpm", "Vent. Rate: 68"
+  const colonMatch = text.match(/(?:ventricular\s+rate|vent\.?\s*rate|average\s+heart\s+rate|heart\s+rate|pulse(?:\s+rate)?|\bhr\b)\s*(?:\([^)]*\))?\s*[:=]\s*(\d{2,3})(?!\d)/i);
+  if (colonMatch) {
+    const num = Number.parseInt(colonMatch[1], 10);
+    if (Number.isFinite(num) && num >= 25 && num <= 300) return num;
+  }
+
+  // 3. Label followed immediately by number with unit bpm: "Average Heart Rate 57 bpm", "Heart rate 72 bpm"
+  const bpmMatch = text.match(/(?:ventricular\s+rate|vent\.?\s*rate|average\s+heart\s+rate|heart\s+rate|pulse(?:\s+rate)?|\bhr\b)\s*(?:\([^)]*\))?\s+(\d{2,3})\s*bpm\b/i);
+  if (bpmMatch) {
+    const num = Number.parseInt(bpmMatch[1], 10);
+    if (Number.isFinite(num) && num >= 25 && num <= 300) return num;
+  }
+
+  // 4. Bracketed unit: "Heart rate (bpm) 75"
+  const bracketMatch = text.match(/(?:ventricular\s+rate|vent\.?\s*rate|average\s+heart\s+rate|heart\s+rate|pulse(?:\s+rate)?|\bhr\b)\s*\((?:bpm|beats\s*\/?\s*min)\)\s*[:=]?\s*(\d{2,3})(?!\d)/i);
+  if (bracketMatch) {
+    const num = Number.parseInt(bracketMatch[1], 10);
+    if (Number.isFinite(num) && num >= 25 && num <= 300) return num;
+  }
+
+  // 5. Fallback general: label followed by number
+  const fallback = text.match(/(?:ventricular\s+rate|vent\.?\s*rate|average\s+heart\s+rate|heart\s+rate|pulse(?:\s+rate)?|\bhr\b)\s*[:=]?\s*(\d{2,3})(?!\d)/i);
+  if (fallback) {
+    const num = Number.parseInt(fallback[1], 10);
+    if (Number.isFinite(num) && num >= 25 && num <= 300) return num;
+  }
+
+  return null;
+}
+
+/**
+ * Extracts ECG test recording date and normalizes month to full name.
+ * e.g. "Recorded on: Oct 10, 2026, 7:50:41 PM" -> "October 10, 2026"
+ * @param {string} text
+ */
+function extractRecordingDate(text) {
+  if (!text) return null;
+  const match = text.match(/(?:recorded\s+on|recording\s+date|date\s+of\s+recording|test\s+date|date)\s*[:=]?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
+  if (match) {
+    const dateStr = match[1].trim();
+    const months = {
+      jan: 'January', feb: 'February', mar: 'March', apr: 'April',
+      may: 'May', jun: 'June', jul: 'July', aug: 'August',
+      sep: 'September', sept: 'September', oct: 'October',
+      nov: 'November', dec: 'December'
+    };
+    const m = dateStr.match(/([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})/i);
+    if (m) {
+      const mon = m[1].toLowerCase().slice(0, 3);
+      const fullMonth = months[mon] || m[1];
+      return `${fullMonth} ${m[2]}, ${m[3]}`;
+    }
+    return dateStr;
   }
   return null;
 }
@@ -200,145 +258,234 @@ function extractTWaveFindings(text) {
 
 /**
  * Extracts Cardiac Rhythm classification.
+ * Prioritizes explicit classification headers and lines.
+ * Filters out disclaimers and negated mentions of AFib (e.g. "doesn't show signs of atrial fibrillation").
+ * Returns null if no rhythm could be determined (never assigns false default like AFib).
  * @param {string} text
  */
 function extractRhythm(text) {
-  const lineMatch = text.match(/(?:cardiac\s+rhythm|heart\s+rhythm|\brhythm\b)\s*[:=]\s*([^\n\r]+)/i);
+  if (!text || typeof text !== 'string') return null;
+
+  // 1. Explicit key-value line: "Rhythm: Normal Sinus Rhythm", "Cardiac rhythm: Sinus Bradycardia"
+  const lineMatch = text.match(/(?:cardiac\s+rhythm|heart\s+rhythm|\brhythm(?:\s+classification)?)\s*[:=]\s*([^\n\r]+)/i);
   if (lineMatch) {
     const raw = lineMatch[1].trim();
-    if (isUnprovided(raw)) return null;
-    if (/atrial\s+fibrillation|a-?fib/i.test(raw)) return 'Atrial Fibrillation';
-    if (/atrial\s+flutter/i.test(raw)) return 'Atrial Flutter';
-    if (/sinus\s+tachycardia/i.test(raw)) return 'Sinus Tachycardia';
-    if (/sinus\s+bradycardia/i.test(raw)) return 'Sinus Bradycardia';
-    if (/sinus\s+rhythm|normal\s+sinus/i.test(raw)) return 'Normal Sinus Rhythm';
-    return raw;
+    if (!isUnprovided(raw)) {
+      if (/normal\s+sinus/i.test(raw) || /\bsinus\s+rhythm\b/i.test(raw)) return 'Normal Sinus Rhythm';
+      if (/sinus\s+bradycardia/i.test(raw)) return 'Sinus Bradycardia';
+      if (/sinus\s+tachycardia/i.test(raw)) return 'Sinus Tachycardia';
+      if (/sinus\s+arrhythmia/i.test(raw)) return 'Sinus Arrhythmia';
+      if (/atrial\s+fibrillation|a-?fib\b/i.test(raw)) {
+        if (!/(?:no|not|negative|without|doesn't)\s+(?:evidence\s+of\s+|signs?\s+of\s+)?(?:atrial\s+fibrillation|a-?fib)/i.test(raw)) {
+          return 'Atrial Fibrillation';
+        }
+      }
+      if (/atrial\s+flutter/i.test(raw)) return 'Atrial Flutter';
+      return raw;
+    }
   }
 
-  const templateMatch = text.match(/(?:cardiac\s+rhythm|heart\s+rhythm|\brhythm\b)\s+([^\n\r]+)/i);
-  if (templateMatch && isUnprovided(templateMatch[1])) return null;
+  // 2. Standalone classification header line (WHOOP / Apple Watch / ECG title block)
+  // e.g. "Normal Sinus Rhythm\nYour heart rhythm appears normal..."
+  const standaloneMatch = text.match(/(?:^|\r?\n)\s*(Normal\s+Sinus\s+Rhythm|Sinus\s+Bradycardia|Sinus\s+Tachycardia|Sinus\s+Arrhythmia|Atrial\s+Fibrillation|Atrial\s+Flutter)\s*(?:\r?\n|$)/i);
+  if (standaloneMatch) {
+    const matched = standaloneMatch[1].trim();
+    if (/normal\s+sinus/i.test(matched)) return 'Normal Sinus Rhythm';
+    if (/sinus\s+bradycardia/i.test(matched)) return 'Sinus Bradycardia';
+    if (/sinus\s+tachycardia/i.test(matched)) return 'Sinus Tachycardia';
+    if (/sinus\s+arrhythmia/i.test(matched)) return 'Sinus Arrhythmia';
+    if (/atrial\s+fibrillation/i.test(matched)) return 'Atrial Fibrillation';
+    if (/atrial\s+flutter/i.test(matched)) return 'Atrial Flutter';
+  }
 
-  if (/atrial\s+fibrillation|a-?fib/i.test(text)) return 'Atrial Fibrillation';
-  if (/atrial\s+flutter/i.test(text)) return 'Atrial Flutter';
-  if (/sinus\s+tachycardia/i.test(text)) return 'Sinus Tachycardia';
-  if (/sinus\s+bradycardia/i.test(text)) return 'Sinus Bradycardia';
-  if (/normal\s+sinus\s+rhythm/i.test(text) || /\bsinus\s+rhythm\b/i.test(text)) return 'Normal Sinus Rhythm';
+  // 3. Negation & disclaimer detection for AFib
+  // Strips phrases like "doesn't show signs of atrial fibrillation" or "discriminating atrial fibrillation (AFib)"
+  const strippedText = text
+    .replace(/(?:doesn't|does\s+not)\s+show\s+(?:any\s+)?(?:signs?\s+of\s+)?(?:atrial\s+fibrillation|a-?fib)/gi, '')
+    .replace(/(?:no\s+signs?|no\s+evidence|negative\s+for|without)\s+(?:of\s+)?(?:atrial\s+fibrillation|a-?fib)/gi, '')
+    .replace(/(?:discriminating|discriminate|differentiating)\s+(?:atrial\s+fibrillation|a-?fib)/gi, '')
+    .replace(/purposes?\s+of\s+discriminating[^\n\r.]*/gi, '')
+    .replace(/not\s+intended\s+to\s+replace[^\n\r.]*/gi, '');
+
+  // 4. Look for positive rhythm indicators in sanitized text
+  if (/\bnormal\s+sinus\s+rhythm\b/i.test(strippedText) || /\bheart\s+rhythm\s+appears\s+normal\b/i.test(strippedText)) {
+    return 'Normal Sinus Rhythm';
+  }
+  if (/\bsinus\s+bradycardia\b/i.test(strippedText)) {
+    return 'Sinus Bradycardia';
+  }
+  if (/\bsinus\s+tachycardia\b/i.test(strippedText)) {
+    return 'Sinus Tachycardia';
+  }
+  if (/\bsinus\s+arrhythmia\b/i.test(strippedText)) {
+    return 'Sinus Arrhythmia';
+  }
+  if (/\bsinus\s+rhythm\b/i.test(strippedText)) {
+    return 'Normal Sinus Rhythm';
+  }
+  if (/\batrial\s+fibrillation\b|\ba-?fib\b/i.test(strippedText)) {
+    return 'Atrial Fibrillation';
+  }
+  if (/\batrial\s+flutter\b/i.test(strippedText)) {
+    return 'Atrial Flutter';
+  }
 
   return null;
 }
 
 /**
- * Extracts physician diagnosis, interpretation, or impression from text.
+ * Extracts physician diagnosis, interpretation, or wearable summary from text.
  * Strips unpopulated template lines and legal disclaimers.
  * @param {string} text
  */
 function extractDiagnosis(text) {
-  const interpMatch = text.match(/(?:written\s+report\s+diagnosis\s*\/?\s*interpretation|interpretation|ecg\s+interpretation|impression|conclusion|diagnosis)\s*[:=]\s*([^\n\r]+)/i);
+  // 1. Explicit written report diagnosis / interpretation / impression / conclusion
+  const interpMatch = text.match(/(?:written\s+report\s+diagnosis\s*\/?\s*interpretation|ecg\s+interpretation|interpretation|impression|conclusion|diagnosis)\s*[:=]\s*([^\n\r]+)/i);
   if (interpMatch && interpMatch[1]) {
     const raw = interpMatch[1].trim().replace(/^[:=\s]+/, '');
     if (!isUnprovided(raw)) {
-      // Clean off trailing boilerplate if present
       const clean = raw.split(/\b(?:Clinical note|This report template|Signed by)\b/i)[0].trim();
       if (clean && !isUnprovided(clean)) {
         return clean;
       }
     }
   }
+
+  // 2. Wearable report summary (e.g. WHOOP, Apple Watch, wearable rhythm impression)
+  const wearableSummary = text.match(/(Your\s+heart\s+rhythm\s+appears\s+normal[\s\S]*?(?:atrial\s+fibrillation|sinus\s+rhythm)\.?)/i);
+  if (wearableSummary) {
+    return wearableSummary[1].replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
   return null;
 }
 
 /**
  * Parses ECG report text and extracts structured electrophysiological measurements.
+ * Accurately classifies single-lead wearable reports vs 12-lead clinical ECGs.
  * @param {string} text Raw text extracted from ECG report
+ * @param {string} fileName Optional filename to aid modality detection
  */
-function parseEcgText(text) {
+function parseEcgText(text, fileName = '') {
   if (!text || typeof text !== 'string') {
     return {
       extractionStatus: 'empty',
+      modality: 'standard_12_lead',
       fields: getEmptyFields(),
       reportedDiagnosis: null,
       summary: null,
+      extractedFieldsSummary: [],
+      missingFieldsSummary: [],
+      unsupportedFieldsSummary: [],
       warnings: ['No readable text found in ECG report.']
     };
   }
 
   const cleanText = cleanReportText(text);
 
+  // Modality detection: Single-Lead Wearable vs Standard 12-Lead Clinical ECG
+  const isSingleLead =
+    /whoop|apple\s+watch|kardia|lead\s+i\b|single[\s-]lead|waveform\s+is\s+similar\s+to\s+a\s+lead\s+i/i.test(cleanText) ||
+    (fileName && /whoop|apple[\s_-]?watch|single[\s_-]?lead/i.test(fileName));
+
+  const modality = isSingleLead ? 'single_lead' : 'standard_12_lead';
+
   // 1. Heart Rate / Ventricular Rate (bpm)
   const heartRate = extractHeartRate(cleanText);
 
-  // 2. PR Interval (ms)
-  // Matches "PR Interval: 160 ms", "PR: 148", "P-R: 170ms", "PR interval (ms) 160", "PR: 0.16 s"
-  const prInterval = extractIntervalMs(
-    cleanText,
-    /(?:p-?r\s*(?:interval|int\.?)|p-?r)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\s*(ms|msec|s(?:ec)?)?/i
-  );
+  // 2. Recording Date (Oct 10, 2026 -> October 10, 2026)
+  const recordingDate = extractRecordingDate(cleanText);
 
-  // 3. QRS Duration (ms)
-  // Matches "QRS Duration: 88 ms", "QRS: 92 ms", "QRS dur: 104", "QRS duration (ms) 88"
-  const qrsDuration = extractIntervalMs(
-    cleanText,
-    /(?:qrs\s*(?:duration|dur\.?|width)|qrs)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\s*(ms|msec|s(?:ec)?)?/i
-  );
-
-  // 4 & 5. QT and QTc Intervals (ms)
-  const { qt: qtInterval, qtc: qtcInterval } = parseQtAndQtc(cleanText);
-
-  // 6. ST-Segment Findings
-  const stFindings = extractStFindings(cleanText);
-
-  // 7. T-Wave Findings
-  const tWaveFindings = extractTWaveFindings(cleanText);
-
-  // 8. Rhythm Classification
+  // 3. Rhythm Classification
   const rhythm = extractRhythm(cleanText);
 
-  // 9. Written Diagnosis / Interpretation
+  // 4. Written Diagnosis / Interpretation
   const diagnosis = extractDiagnosis(cleanText);
 
-  const stField = {
-    value: stFindings,
-    unit: '',
-    status: stFindings !== null ? 'extracted' : 'not_found'
-  };
+  // 5. 12-lead interval measurements (Only applicable to multi-lead clinical ECGs)
+  let prInterval = null;
+  let qrsDuration = null;
+  let qtInterval = null;
+  let qtcInterval = null;
+  let stFindings = null;
+  let tWaveFindings = null;
 
-  const tWaveField = {
-    value: tWaveFindings,
-    unit: '',
-    status: tWaveFindings !== null ? 'extracted' : 'not_found'
-  };
+  if (!isSingleLead) {
+    prInterval = extractIntervalMs(
+      cleanText,
+      /(?:p-?r\s*(?:interval|int\.?)|p-?r)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\s*(ms|msec|s(?:ec)?)?/i
+    );
 
-  // Build fields contract supporting both stFindings/stSegment and tWaveFindings/tWave
+    qrsDuration = extractIntervalMs(
+      cleanText,
+      /(?:qrs\s*(?:duration|dur\.?|width)|qrs)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\s*(ms|msec|s(?:ec)?)?/i
+    );
+
+    const qtParsed = parseQtAndQtc(cleanText);
+    qtInterval = qtParsed.qt;
+    qtcInterval = qtParsed.qtc;
+
+    stFindings = extractStFindings(cleanText);
+    tWaveFindings = extractTWaveFindings(cleanText);
+  }
+
+  // Field status mapping:
+  // - extracted: measurement was successfully parsed
+  // - unsupported: not recorded by this modality (e.g. 12-lead intervals on single-lead wearable)
+  // - not_found: expected by modality but missing in document
+  const unsupportedStatus = isSingleLead ? 'unsupported' : 'not_found';
+
   const fields = {
     heartRate: {
       value: heartRate,
       unit: 'bpm',
       status: heartRate !== null ? 'extracted' : 'not_found'
     },
+    recordingDate: {
+      value: recordingDate,
+      unit: '',
+      status: recordingDate !== null ? 'extracted' : (isSingleLead ? 'not_found' : 'not_applicable')
+    },
     prInterval: {
       value: prInterval,
       unit: 'ms',
-      status: prInterval !== null ? 'extracted' : 'not_found'
+      status: prInterval !== null ? 'extracted' : unsupportedStatus
     },
     qrsDuration: {
       value: qrsDuration,
       unit: 'ms',
-      status: qrsDuration !== null ? 'extracted' : 'not_found'
+      status: qrsDuration !== null ? 'extracted' : unsupportedStatus
     },
     qtInterval: {
       value: qtInterval,
       unit: 'ms',
-      status: qtInterval !== null ? 'extracted' : 'not_found'
+      status: qtInterval !== null ? 'extracted' : unsupportedStatus
     },
     qtcInterval: {
       value: qtcInterval,
       unit: 'ms',
-      status: qtcInterval !== null ? 'extracted' : 'not_found'
+      status: qtcInterval !== null ? 'extracted' : unsupportedStatus
     },
-    stFindings: stField,
-    stSegment: stField,
-    tWaveFindings: tWaveField,
-    tWave: tWaveField,
+    stFindings: {
+      value: stFindings,
+      unit: '',
+      status: stFindings !== null ? 'extracted' : unsupportedStatus
+    },
+    stSegment: {
+      value: stFindings,
+      unit: '',
+      status: stFindings !== null ? 'extracted' : unsupportedStatus
+    },
+    tWaveFindings: {
+      value: tWaveFindings,
+      unit: '',
+      status: tWaveFindings !== null ? 'extracted' : unsupportedStatus
+    },
+    tWave: {
+      value: tWaveFindings,
+      unit: '',
+      status: tWaveFindings !== null ? 'extracted' : unsupportedStatus
+    },
     rhythm: {
       value: rhythm,
       unit: '',
@@ -351,59 +498,113 @@ function parseEcgText(text) {
     }
   };
 
-  const coreFieldsList = [
-    fields.heartRate,
-    fields.prInterval,
-    fields.qrsDuration,
-    fields.qtInterval,
-    fields.qtcInterval,
-    fields.stFindings,
-    fields.tWaveFindings,
-    fields.rhythm,
-    fields.interpretation
-  ];
-  const extractedCount = coreFieldsList.filter(f => f.status === 'extracted').length;
-
   const warnings = [];
   let extractionStatus = 'empty';
 
-  if (extractedCount === 0) {
-    extractionStatus = 'empty';
-    warnings.push(
-      'This document does not contain any readable clinical ECG measurements or diagnosis. It appears to be an unpopulated template. Please manually enter your values.'
-    );
-  } else if (extractedCount < 3) {
-    extractionStatus = 'partial';
-    warnings.push(
-      'Only partial standard measurements could be extracted automatically. Please verify or manually enter missing values.'
-    );
+  const extractedFieldsSummary = [];
+  const manualReviewFieldsSummary = [];
+  const unsupportedFieldsSummary = [];
+  const missingFieldsSummary = [];
+
+  if (isSingleLead) {
+    // Single-Lead Wearable rules:
+    // Core parameters: heartRate and rhythm
+    if (heartRate !== null) extractedFieldsSummary.push(`Heart Rate (${heartRate} BPM)`);
+    else missingFieldsSummary.push('Heart Rate');
+
+    if (rhythm !== null) extractedFieldsSummary.push(`Rhythm (${rhythm})`);
+    else missingFieldsSummary.push('Rhythm');
+
+    if (recordingDate !== null) extractedFieldsSummary.push(`Recording Date (${recordingDate})`);
+    if (diagnosis !== null) manualReviewFieldsSummary.push('Clinical Impression / Physician Review');
+
+    unsupportedFieldsSummary.push('PR Interval', 'QRS Duration', 'QT/QTc Interval', 'ST Segment', 'T-Wave');
+
+    if (heartRate !== null && rhythm !== null) {
+      extractionStatus = 'success';
+      // No warnings when single-lead extraction succeeds
+    } else if (heartRate !== null || rhythm !== null) {
+      extractionStatus = 'partial';
+      warnings.push(
+        'Partial wearable ECG extracted. Please review and enter any unparsed parameters manually.'
+      );
+    } else {
+      extractionStatus = 'empty';
+      warnings.push(
+        'Could not extract heart rate or rhythm from this single-lead document. Please enter values manually.'
+      );
+    }
   } else {
-    extractionStatus = 'success';
+    // Standard 12-Lead Clinical ECG rules:
+    // 1. Objective fiducial parameters -> Successfully Extracted
+    if (heartRate !== null) extractedFieldsSummary.push(`Heart Rate (${heartRate} bpm)`);
+    else missingFieldsSummary.push('Heart Rate');
+
+    if (prInterval !== null) extractedFieldsSummary.push(`PR Interval (${prInterval} ms)`);
+    else missingFieldsSummary.push('PR Interval');
+
+    if (qrsDuration !== null) extractedFieldsSummary.push(`QRS Duration (${qrsDuration} ms)`);
+    else missingFieldsSummary.push('QRS Duration');
+
+    if (rhythm !== null) extractedFieldsSummary.push(`Rhythm (${rhythm})`);
+    else missingFieldsSummary.push('Rhythm');
+
+    if (recordingDate !== null) extractedFieldsSummary.push(`Recording Date (${recordingDate})`);
+
+    // 2. Repolarization & Morphological parameters -> Requires Manual Review
+    if (qtInterval !== null) manualReviewFieldsSummary.push(`QT Interval (${qtInterval} ms)`);
+    if (qtcInterval !== null) manualReviewFieldsSummary.push(`QTc Interval (${qtcInterval} ms)`);
+    if (stFindings !== null && !isUnprovided(stFindings)) manualReviewFieldsSummary.push(`ST-Segment Findings (${stFindings})`);
+    if (tWaveFindings !== null && !isUnprovided(tWaveFindings)) manualReviewFieldsSummary.push(`T-Wave Findings (${tWaveFindings})`);
+    if (diagnosis !== null && !isUnprovided(diagnosis)) manualReviewFieldsSummary.push(`Physician Diagnosis / Interpretation`);
+
+    const totalExtracted = extractedFieldsSummary.length + manualReviewFieldsSummary.length;
+
+    if (totalExtracted === 0) {
+      extractionStatus = 'empty';
+      warnings.push(
+        'This document does not contain readable clinical ECG measurements or diagnosis. It appears to be an unpopulated template. Please manually enter your values.'
+      );
+    } else if (totalExtracted < 3) {
+      extractionStatus = 'partial';
+      warnings.push(
+        'Only partial standard measurements could be extracted automatically. Please verify or manually enter missing values.'
+      );
+    } else {
+      extractionStatus = 'success';
+      // No warnings when extraction is successful and all present fields are processed
+    }
   }
 
   return {
     extractionStatus,
+    modality,
     fields,
     reportedDiagnosis: diagnosis,
     summary: diagnosis,
+    extractedFieldsSummary,
+    manualReviewFieldsSummary,
+    missingFieldsSummary,
+    unsupportedFieldsSummary,
     warnings
   };
 }
 
-function getEmptyFields() {
+function getEmptyFields(isSingleLead = false) {
   const notFound = (unit = '') => ({ value: null, unit, status: 'not_found' });
-  const emptySt = notFound('');
-  const emptyTw = notFound('');
+  const unsupported = (unit = '') => ({ value: null, unit, status: isSingleLead ? 'unsupported' : 'not_found' });
+
   return {
     heartRate: notFound('bpm'),
-    prInterval: notFound('ms'),
-    qrsDuration: notFound('ms'),
-    qtInterval: notFound('ms'),
-    qtcInterval: notFound('ms'),
-    stFindings: emptySt,
-    stSegment: emptySt,
-    tWaveFindings: emptyTw,
-    tWave: emptyTw,
+    recordingDate: notFound(''),
+    prInterval: unsupported('ms'),
+    qrsDuration: unsupported('ms'),
+    qtInterval: unsupported('ms'),
+    qtcInterval: unsupported('ms'),
+    stFindings: unsupported(''),
+    stSegment: unsupported(''),
+    tWaveFindings: unsupported(''),
+    tWave: unsupported(''),
     rhythm: notFound(''),
     interpretation: notFound('')
   };

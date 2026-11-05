@@ -39,17 +39,22 @@ const parseEcgReport = asyncHandler(async (req, res) => {
   const pdfResult = await extractTextFromPdf(buffer, fileName);
 
   // 2. Parse ECG parameters from extracted text
-  const ecgExtraction = ecgService.parseEcgText(pdfResult.text);
+  const ecgExtraction = ecgService.parseEcgText(pdfResult.text, fileName);
 
-  // Combine warnings
-  const warnings = [...pdfResult.warnings, ...ecgExtraction.warnings];
-
-  // If text was too short or scanned, add note
-  if (pdfResult.isScanned) {
+  // Combine warnings - only include genuine warnings, do NOT add generic scanned warnings if OCR succeeded
+  let warnings = [];
+  if (pdfResult.isScanned && !pdfResult.ocrApplied) {
     warnings.push(
       'Document appears to contain scanned or image-based pages. Automated text extraction may be incomplete. Please verify or manually enter measurements.'
     );
   }
+  if (ecgExtraction.warnings && ecgExtraction.warnings.length > 0) {
+    warnings.push(...ecgExtraction.warnings);
+  }
+
+  const ecgOcrNotice = pdfResult.ocrApplied
+    ? 'Scanned document detected. OCR was applied successfully. Please verify extracted clinical values.'
+    : null;
 
   res.json({
     success: true,
@@ -57,9 +62,25 @@ const parseEcgReport = asyncHandler(async (req, res) => {
     fileName: fileName,
     pageCount: pdfResult.pageCount,
     extractionStatus: ecgExtraction.extractionStatus,
+    modality: ecgExtraction.modality,
+    recordingDate: ecgExtraction.recordingDate || ecgExtraction.fields.recordingDate?.value || null,
     isScanned: pdfResult.isScanned,
+    ocrApplied: pdfResult.ocrApplied || false,
+    docProcessing: {
+      isScanned: pdfResult.isScanned,
+      ocrApplied: pdfResult.ocrApplied || false,
+      ocrNotice: ecgOcrNotice,
+      pageCount: pdfResult.pageCount,
+      statusText: pdfResult.ocrApplied
+        ? `Optical Character Recognition (OCR) applied (${pdfResult.pageCount} ${pdfResult.pageCount === 1 ? 'page' : 'pages'} scanned)`
+        : `Digital PDF text parsed (${pdfResult.pageCount} ${pdfResult.pageCount === 1 ? 'page' : 'pages'})`
+    },
     fields: ecgExtraction.fields,
     reportedDiagnosis: ecgExtraction.reportedDiagnosis,
+    extractedFieldsSummary: ecgExtraction.extractedFieldsSummary,
+    manualReviewFieldsSummary: ecgExtraction.manualReviewFieldsSummary || [],
+    missingFieldsSummary: ecgExtraction.missingFieldsSummary,
+    unsupportedFieldsSummary: ecgExtraction.unsupportedFieldsSummary,
     warnings: warnings,
     extractedAt: new Date().toISOString(),
   });
@@ -83,14 +104,25 @@ const parseTmtReport = asyncHandler(async (req, res) => {
   // 2. Parse TMT parameters from extracted text
   const tmtExtraction = tmtService.parseTmtText(pdfResult.text);
 
-  // Combine warnings
-  const warnings = [...pdfResult.warnings, ...tmtExtraction.warnings];
-
-  if (pdfResult.isScanned) {
-    warnings.push(
-      'Document appears to contain scanned pages or graphical stress curves. Automated text extraction may be incomplete. Please verify or manually enter measurements.'
-    );
+  // Combine warnings - if document mismatch, only show the mismatch message
+  let warnings = [];
+  if (tmtExtraction.isMismatch) {
+    warnings = [...tmtExtraction.warnings];
+  } else {
+    // Only add OCR warning if document was scanned but OCR failed to extract text
+    if (pdfResult.isScanned && !pdfResult.ocrApplied) {
+      warnings.push(
+        'Document appears to contain scanned pages or graphical stress curves. Automated text extraction may be incomplete. Please verify or manually enter measurements.'
+      );
+    }
+    if (tmtExtraction.warnings && tmtExtraction.warnings.length > 0) {
+      warnings.push(...tmtExtraction.warnings);
+    }
   }
+
+  const tmtOcrNotice = pdfResult.ocrApplied
+    ? 'Scanned document detected. OCR was applied successfully. Please verify extracted clinical values.'
+    : null;
 
   res.json({
     success: true,
@@ -98,9 +130,33 @@ const parseTmtReport = asyncHandler(async (req, res) => {
     fileName: fileName,
     pageCount: pdfResult.pageCount,
     extractionStatus: tmtExtraction.extractionStatus,
+    isMismatch: tmtExtraction.isMismatch || false,
+    detectedType: tmtExtraction.detectedType || null,
     isScanned: pdfResult.isScanned,
+    ocrApplied: pdfResult.ocrApplied || false,
+    docProcessing: {
+      isScanned: pdfResult.isScanned,
+      ocrApplied: pdfResult.ocrApplied || false,
+      ocrNotice: tmtOcrNotice,
+      pageCount: pdfResult.pageCount,
+      statusText: pdfResult.ocrApplied
+        ? `Optical Character Recognition (OCR) applied (${pdfResult.pageCount} pages scanned)`
+        : `Digital PDF text parsed (${pdfResult.pageCount} ${pdfResult.pageCount === 1 ? 'page' : 'pages'})`
+    },
+    clinicalExtraction: tmtExtraction.clinicalExtraction || {
+      status: tmtExtraction.extractionStatus,
+      extractedCount: (tmtExtraction.extractedFieldsSummary || []).length,
+      unreportedCount: (tmtExtraction.missingFieldsSummary || []).length,
+      statusText: `${(tmtExtraction.extractedFieldsSummary || []).length} Extracted · ${(tmtExtraction.missingFieldsSummary || []).length} Unreported`
+    },
+    durationFormatted: tmtExtraction.durationFormatted || tmtExtraction.fields?.durationMinutes?.formatted || null,
     fields: tmtExtraction.fields,
-    reportedConclusion: tmtExtraction.reportedConclusion,
+    tmtResult: tmtExtraction.tmtResult || null,
+    reportedConclusion: tmtExtraction.reportedConclusion || null,
+    reportedDts: tmtExtraction.reportedDts !== undefined ? tmtExtraction.reportedDts : null,
+    extractedFieldsSummary: tmtExtraction.extractedFieldsSummary || [],
+    manualReviewFieldsSummary: tmtExtraction.manualReviewFieldsSummary || [],
+    missingFieldsSummary: tmtExtraction.missingFieldsSummary || [],
     warnings: warnings,
     extractedAt: new Date().toISOString(),
   });

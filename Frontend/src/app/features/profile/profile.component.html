@@ -15,21 +15,21 @@
           <mat-icon>mail</mat-icon>
           <span>{{ u.email }}</span>
           @if (u.isEmailVerified) {
-            <mat-icon style="color: var(--success); font-size: 15px; height: 15px; width: 15px">verified</mat-icon>
+            <mat-icon class="verified-icon" title="Verified account">verified</mat-icon>
           }
         </div>
       </div>
       <div class="hero-stats">
         <div class="hero-stat">
-          <strong>{{ bmi() }}</strong>
+          <strong>{{ bmi() !== null ? bmi() : '—' }}</strong>
           <span>BMI</span>
         </div>
         <div class="hero-stat">
-          <strong>{{ u.heightCm }}</strong>
+          <strong>{{ (u.heightCm && u.heightCm > 0) ? u.heightCm : '—' }}</strong>
           <span>cm</span>
         </div>
         <div class="hero-stat">
-          <strong>{{ u.weightKg }}</strong>
+          <strong>{{ (u.weightKg && u.weightKg > 0) ? u.weightKg : '—' }}</strong>
           <span>kg</span>
         </div>
       </div>
@@ -37,35 +37,46 @@
 
     <div class="profile-grid">
       <!-- Main column -->
-      <div>
+      <div class="main-col">
         <div class="card">
-          <h3><mat-icon>person</mat-icon> Personal information</h3>
-          <p class="card-sub">These details keep your predictions calibrated to your baseline.</p>
+          <div class="card-header-clean">
+            <h3><mat-icon>person</mat-icon> Personal information</h3>
+            <p class="card-sub">These details keep your predictions calibrated to your baseline.</p>
+          </div>
 
           <form [formGroup]="profileForm">
             <div class="fields-grid">
+              <!-- Name fields -->
               <mat-form-field appearance="outline">
                 <mat-label>First name</mat-label>
-                <input matInput formControlName="firstName" />
+                <input matInput formControlName="firstName" placeholder="First name" autocomplete="given-name" />
+                @if (profileForm.get('firstName')?.hasError('required') && profileForm.get('firstName')?.touched) {
+                  <mat-error>First name is required</mat-error>
+                }
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>Last name</mat-label>
-                <input matInput formControlName="lastName" />
+                <input matInput formControlName="lastName" placeholder="Last name" autocomplete="family-name" />
+                @if (profileForm.get('lastName')?.hasError('required') && profileForm.get('lastName')?.touched) {
+                  <mat-error>Last name is required</mat-error>
+                }
               </mat-form-field>
 
+              <!-- Contact fields -->
               <mat-form-field appearance="outline">
                 <mat-label>Email</mat-label>
                 <mat-icon matPrefix>mail</mat-icon>
-                <input matInput formControlName="email" />
+                <input matInput formControlName="email" autocomplete="email" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>Phone</mat-label>
                 <mat-icon matPrefix>phone</mat-icon>
-                <input matInput formControlName="phone" />
+                <input matInput formControlName="phone" placeholder="e.g. +1 555-0199" autocomplete="tel" />
               </mat-form-field>
 
+              <!-- Demographic fields -->
               <mat-form-field appearance="outline">
                 <mat-label>Gender</mat-label>
                 <mat-select formControlName="gender">
@@ -78,26 +89,36 @@
               <mat-form-field appearance="outline">
                 <mat-label>Date of birth</mat-label>
                 <mat-icon matPrefix>cake</mat-icon>
-                <input matInput type="date" formControlName="dateOfBirth" />
+                <input matInput type="date" formControlName="dateOfBirth" [max]="maxDate" />
               </mat-form-field>
 
+              <!-- Physical measurements -->
               <mat-form-field appearance="outline">
                 <mat-label>Height</mat-label>
                 <mat-icon matPrefix>straighten</mat-icon>
-                <input matInput type="number" formControlName="heightCm" />
+                <input matInput type="number" formControlName="heightCm" placeholder="e.g. 175" min="50" max="250" />
                 <span matTextSuffix>cm</span>
+                @if (profileForm.get('heightCm')?.invalid && profileForm.get('heightCm')?.touched) {
+                  <mat-error>Enter 50–250 cm</mat-error>
+                }
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>Weight</mat-label>
                 <mat-icon matPrefix>scale</mat-icon>
-                <input matInput type="number" formControlName="weightKg" />
+                <input matInput type="number" formControlName="weightKg" placeholder="e.g. 70" min="20" max="300" />
                 <span matTextSuffix>kg</span>
+                @if (profileForm.get('weightKg')?.invalid && profileForm.get('weightKg')?.touched) {
+                  <mat-error>Enter 20–300 kg</mat-error>
+                }
               </mat-form-field>
 
-              <mat-form-field appearance="outline">
+              <!-- Blood group -->
+              <mat-form-field appearance="outline" class="blood-field">
                 <mat-label>Blood group</mat-label>
-                <mat-select formControlName="bloodGroup">
+                <mat-icon matPrefix>bloodtype</mat-icon>
+                <mat-select formControlName="bloodGroup" placeholder="Select blood group">
+                  <mat-option value="">None / Unknown</mat-option>
                   <mat-option value="A+">A+</mat-option>
                   <mat-option value="A-">A-</mat-option>
                   <mat-option value="B+">B+</mat-option>
@@ -109,27 +130,33 @@
                 </mat-select>
               </mat-form-field>
 
+              <div class="blood-spacer" aria-hidden="true"></div>
+
+              <!-- Medical details: Full width with dedicated spacing -->
               <mat-form-field appearance="outline" class="full-field">
                 <mat-label>Allergies (comma separated)</mat-label>
-                <mat-icon matPrefix>warning</mat-icon>
-                <input matInput formControlName="allergies" placeholder="Penicillin, Shellfish" />
+                <mat-icon matPrefix>warning_amber</mat-icon>
+                <input matInput formControlName="allergies" placeholder="e.g. Penicillin, Shellfish (leave empty if none)" />
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-field">
                 <mat-label>Medications (comma separated)</mat-label>
                 <mat-icon matPrefix>medication</mat-icon>
-                <input matInput formControlName="medications" placeholder="Metformin 500mg, Atorvastatin 10mg" />
+                <input matInput formControlName="medications" placeholder="e.g. Metformin 500mg, Atorvastatin 10mg (leave empty if none)" />
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-field">
                 <mat-label>Medical conditions (comma separated)</mat-label>
                 <mat-icon matPrefix>medical_services</mat-icon>
-                <input matInput formControlName="medicalConditions" placeholder="Type 2 Diabetes" />
+                <input matInput formControlName="medicalConditions" placeholder="e.g. Hypertension, Type 2 Diabetes (leave empty if none)" />
               </mat-form-field>
             </div>
 
             <div class="form-actions">
-              <button mat-stroked-button type="button" (click)="patchForm(u)">Reset</button>
+              <button mat-stroked-button type="button" (click)="patchForm(u)">
+                <mat-icon>restart_alt</mat-icon>
+                Reset
+              </button>
               <button
                 mat-flat-button
                 color="primary"
@@ -144,38 +171,104 @@
           </form>
         </div>
 
-        <div class="card" style="margin-top: 20px">
-          <h3><mat-icon>lock</mat-icon> Security</h3>
-          <p class="card-sub">Update your password to keep your account secure.</p>
+        <!-- Security Card -->
+        <div class="card security-card">
+          <div class="card-header-clean">
+            <h3><mat-icon>lock</mat-icon> Security</h3>
+            <p class="card-sub">Update your password to keep your account secure.</p>
+          </div>
 
           <form [formGroup]="passwordForm">
-            <div class="fields-grid">
+            <div class="password-grid">
               <mat-form-field appearance="outline" class="full-field">
                 <mat-label>Current password</mat-label>
                 <mat-icon matPrefix>lock</mat-icon>
-                <input matInput type="password" formControlName="currentPassword" />
+                <input
+                  matInput
+                  [type]="hideCurrentPassword() ? 'password' : 'text'"
+                  formControlName="currentPassword"
+                  placeholder="Enter current password"
+                  autocomplete="current-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="hideCurrentPassword.set(!hideCurrentPassword())"
+                  [attr.aria-label]="hideCurrentPassword() ? 'Show current password' : 'Hide current password'"
+                  class="password-visibility-btn"
+                >
+                  <mat-icon>{{ hideCurrentPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                @if (passwordForm.get('currentPassword')?.hasError('required') && passwordForm.get('currentPassword')?.touched) {
+                  <mat-error>Current password is required</mat-error>
+                }
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>New password</mat-label>
                 <mat-icon matPrefix>lock_reset</mat-icon>
-                <input matInput type="password" formControlName="newPassword" />
+                <input
+                  matInput
+                  [type]="hideNewPassword() ? 'password' : 'text'"
+                  formControlName="newPassword"
+                  placeholder="At least 8 characters"
+                  autocomplete="new-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="hideNewPassword.set(!hideNewPassword())"
+                  [attr.aria-label]="hideNewPassword() ? 'Show new password' : 'Hide new password'"
+                  class="password-visibility-btn"
+                >
+                  <mat-icon>{{ hideNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                @if (passwordForm.get('newPassword')?.hasError('required') && passwordForm.get('newPassword')?.touched) {
+                  <mat-error>New password is required</mat-error>
+                } @else if (passwordForm.get('newPassword')?.hasError('minlength') && passwordForm.get('newPassword')?.touched) {
+                  <mat-error>Must be at least 8 characters</mat-error>
+                }
               </mat-form-field>
 
               <mat-form-field appearance="outline">
                 <mat-label>Confirm new password</mat-label>
                 <mat-icon matPrefix>verified_user</mat-icon>
-                <input matInput type="password" formControlName="confirmPassword" />
+                <input
+                  matInput
+                  [type]="hideConfirmPassword() ? 'password' : 'text'"
+                  formControlName="confirmPassword"
+                  placeholder="Re-enter new password"
+                  autocomplete="new-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="hideConfirmPassword.set(!hideConfirmPassword())"
+                  [attr.aria-label]="hideConfirmPassword() ? 'Show confirm password' : 'Hide confirm password'"
+                  class="password-visibility-btn"
+                >
+                  <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                @if (passwordForm.get('confirmPassword')?.hasError('required') && passwordForm.get('confirmPassword')?.touched) {
+                  <mat-error>Please confirm your new password</mat-error>
+                }
               </mat-form-field>
             </div>
 
-            @if (passwordForm.errors?.['mismatch']) {
+            @if (passwordForm.errors?.['mismatch'] && (passwordForm.get('confirmPassword')?.touched || passwordForm.get('confirmPassword')?.dirty)) {
               <div class="mismatch-error">
-                <mat-icon>error</mat-icon>
-                Passwords do not match.
+                <mat-icon>error_outline</mat-icon>
+                <span>Passwords do not match.</span>
               </div>
             }
-            <p class="password-hint">At least 8 characters, mixing letters and numbers.</p>
+
+            <p class="password-hint">
+              <mat-icon>info_outline</mat-icon>
+              <span>At least 8 characters, mixing letters and numbers.</span>
+            </p>
 
             <div class="form-actions">
               <button
@@ -185,7 +278,7 @@
                 [disabled]="passwordForm.invalid || changingPassword()"
                 (click)="changePassword()"
               >
-                <mat-icon>password</mat-icon>
+                <mat-icon>key</mat-icon>
                 {{ changingPassword() ? 'Updating…' : 'Change password' }}
               </button>
             </div>
@@ -195,17 +288,32 @@
 
       <!-- Side column -->
       <div class="side-col">
+        <!-- Body mass index card -->
         <div class="card bmi-card">
           <h3><mat-icon>favorite</mat-icon> Body mass index</h3>
-          <app-circular-progress [value]="bmi() * 2.5" [color]="bmiLevel().color" [size]="150" [strokeWidth]="12">
-            <strong style="font-size: 26px">{{ bmi() }}</strong>
-          </app-circular-progress>
+          <div class="bmi-gauge-wrap">
+            <app-circular-progress
+              [value]="bmi() !== null ? (bmi()! * 2.5) : 0"
+              [color]="bmiLevel().color"
+              [size]="150"
+              [strokeWidth]="12"
+            >
+              @if (bmi() !== null) {
+                <strong class="bmi-value-text">{{ bmi() }}</strong>
+              } @else {
+                <span class="bmi-empty-text">—</span>
+              }
+            </app-circular-progress>
+          </div>
           <div class="ring-note">
-            <strong>{{ bmiLevel().label }}</strong>
-            <span>Based on your height &amp; weight</span>
+            <strong [style.color]="bmi() !== null ? bmiLevel().color : 'var(--text-secondary)'">
+              {{ bmiLevel().label }}
+            </strong>
+            <span>{{ bmiLevel().message }}</span>
           </div>
         </div>
 
+        <!-- Profile completeness card -->
         <div class="card completeness">
           <h3><mat-icon>insights</mat-icon> Profile completeness</h3>
           <div class="completeness-track">
@@ -217,29 +325,38 @@
           </div>
           <ul class="check-list">
             <li>
-              <mat-icon [class.done]="!!u.phone" [class.pending]="!u.phone">check_circle</mat-icon>
-              Phone number added
+              <mat-icon [class.done]="!!u.phone.trim()" [class.pending]="!u.phone.trim()">
+                {{ u.phone.trim() ? 'check_circle' : 'radio_button_unchecked' }}
+              </mat-icon>
+              <span>Phone number added</span>
             </li>
             <li>
-              <mat-icon [class.done]="!!u.bloodGroup" [class.pending]="!u.bloodGroup">check_circle</mat-icon>
-              Blood group on file
+              <mat-icon [class.done]="!!u.bloodGroup.trim()" [class.pending]="!u.bloodGroup.trim()">
+                {{ u.bloodGroup.trim() ? 'check_circle' : 'radio_button_unchecked' }}
+              </mat-icon>
+              <span>Blood group on file</span>
             </li>
             <li>
-              <mat-icon [class.done]="u.allergies.length > 0" [class.pending]="u.allergies.length === 0">check_circle</mat-icon>
-              Allergies recorded
+              <mat-icon [class.done]="u.allergies && u.allergies.length > 0" [class.pending]="!u.allergies || u.allergies.length === 0">
+                {{ (u.allergies && u.allergies.length > 0) ? 'check_circle' : 'radio_button_unchecked' }}
+              </mat-icon>
+              <span>Allergies recorded</span>
             </li>
             <li>
-              <mat-icon [class.done]="u.medicalConditions.length > 0" [class.pending]="u.medicalConditions.length === 0">check_circle</mat-icon>
-              Conditions recorded
+              <mat-icon [class.done]="u.medicalConditions && u.medicalConditions.length > 0" [class.pending]="!u.medicalConditions || u.medicalConditions.length === 0">
+                {{ (u.medicalConditions && u.medicalConditions.length > 0) ? 'check_circle' : 'radio_button_unchecked' }}
+              </mat-icon>
+              <span>Conditions recorded</span>
             </li>
           </ul>
         </div>
 
+        <!-- Account details card -->
         <div class="card">
           <h3><mat-icon>badge</mat-icon> Account details</h3>
           <ul class="info-list">
             <li><span>Member since</span><strong>{{ u.createdAt | date: 'MMM yyyy' }}</strong></li>
-            <li><span>User ID</span><strong style="font-size: 12px">{{ u.id }}</strong></li>
+            <li><span>User ID</span><strong class="user-id-text">{{ u.id }}</strong></li>
             <li><span>Role</span><strong style="text-transform: capitalize">{{ u.role }}</strong></li>
             <li><span>Verified</span><strong>{{ u.isEmailVerified ? 'Yes' : 'No' }}</strong></li>
           </ul>

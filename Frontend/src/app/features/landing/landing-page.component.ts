@@ -8,9 +8,6 @@ import { NgIf } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { ThemeService } from '../../core/services/theme.service';
-import { AnimatedCounterComponent } from '../../shared/components/animated-counter/animated-counter.component';
-import { InViewDirective } from '../../shared/directives/in-view.directive';
-import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 
 interface Feature {
   icon: string;
@@ -110,7 +107,7 @@ const FAQS: Faq[] = [
   { q: 'How accurate are the predictions?', a: 'The underlying ML model reaches approximately 87% accuracy on validation data. Every prediction includes a confidence percentage so you can judge how strongly the model stands behind the result.' },
   { q: 'What data does CardioSight collect?', a: 'Only the personal, lifestyle, clinical and sleep parameters you enter, plus your account details. Your data is transmitted over HTTPS and protected with JWT authentication. We never sell or share it.' },
   { q: 'Can I use it to monitor my progress over time?', a: 'Yes. Every prediction is stored in your history with a risk score, so the dashboard and analytics charts show how your risk evolves and what factors improved it.' },
-  { q: 'How is my risk level calculated?', a: 'A gradient-boosting model trained on sleep and clinical datasets computes a 0–100 risk score. Scores under 35 are Low risk, 35–59 Medium, and 60+ High.' },
+  { q: 'How is my risk level calculated?', a: 'Based on standard Framingham clinical guidelines, your estimated 10-year CHD risk is stratified as Low (< 10%), Intermediate/Moderate (10–19%), or High (≥ 20%).' },
   { q: 'Do I need to download anything?', a: 'No. CardioSight runs entirely in your browser and is fully responsive, so it works on desktop, tablet and mobile.' },
 ];
 
@@ -133,9 +130,6 @@ const GAUGE_LENGTH = 283;
     NgIf,
     MatIconModule,
     MatExpansionModule,
-    AnimatedCounterComponent,
-    InViewDirective,
-    AvatarComponent,
   ],
 })
 export class LandingPageComponent {
@@ -156,6 +150,7 @@ export class LandingPageComponent {
   readonly progressBars = [64, 52, 47, 38, 33, 28];
 
   readonly statsVisible = signal(false);
+  readonly heartImageFailed = signal(false);
   readonly scrolled = signal(false);
   readonly mobileMenuOpen = signal(false);
 

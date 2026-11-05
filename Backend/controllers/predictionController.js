@@ -180,6 +180,12 @@ const RECORD_SELECT = `
  * POST /api/predict
  */
 const createPrediction = asyncHandler(async (req, res) => {
+  // Clinical RBAC enforcement:
+  // Administrators cannot create clinical patient predictions under their administrative account.
+  if (req.user && req.user.role === 'admin') {
+    throw new HttpError(403, 'Forbidden: Administrators cannot create clinical predictions in the patient workflow.');
+  }
+
   // 1. Validate Framingham input
   const input = validatePredictionInput(req.body);
 
@@ -201,7 +207,11 @@ const createPrediction = asyncHandler(async (req, res) => {
   let tmtFindings = null;
   if (req.body.tmt && typeof req.body.tmt === 'object' && Object.keys(req.body.tmt).length > 0) {
     try {
-      tmtFindings = await tmtService.analyzeTmt(req.body.tmt);
+      tmtFindings = await tmtService.analyzeTmt({
+        ...req.body.tmt,
+        age: req.body.tmt.age != null && req.body.tmt.age !== '' ? Number(req.body.tmt.age) : input.age,
+        sex: req.body.tmt.sex != null && req.body.tmt.sex !== '' ? Number(req.body.tmt.sex) : input.male,
+      });
     } catch (err) {
       console.warn('TMT analysis failed; continuing without blocking Framingham prediction:', err.message);
       tmtFindings = {
@@ -309,21 +319,44 @@ const createPrediction = asyncHandler(async (req, res) => {
  */
 const getPrediction = asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT *
-     FROM predictions
-     WHERE id = $1
-       AND user_id = $2`,
-    [req.params.id, req.user.id]
+    `SELECT * FROM predictions WHERE id = $1`,
+    [req.params.id]
   );
 
   if (rows.length === 0) {
     throw new HttpError(404, "Prediction not found.");
   }
 
+  const record = rows[0];
+  const isAdmin = String(req.user.role || '').toLowerCase().trim() === 'admin';
+  if (record.user_id !== req.user.id && !isAdmin) {
+    throw new HttpError(403, "Forbidden: You do not have permission to access this prediction record.");
+  }
+
+  // Audit logging for administrative inspection of patient prediction
+  if (isAdmin && record.user_id !== req.user.id) {
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs (user_id, admin_email, action, target_type, target_id, details)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          req.user.id,
+          req.user.email || 'admin@cardiosight.local',
+          'ADMIN_VIEW_PATIENT_PREDICTION',
+          'prediction',
+          record.id,
+          JSON.stringify({ patientId: record.user_id, riskScore: record.risk_score, riskLevel: record.risk_level })
+        ]
+      );
+    } catch (auditErr) {
+      console.warn('[predictionController] Failed to record audit log:', auditErr.message);
+    }
+  }
+
   res.json({
     success: true,
     message: "Prediction retrieved.",
-    data: serializeResult(rows[0]),
+    data: serializeResult(record),
   });
 });
 
@@ -339,11 +372,8 @@ const inFlightExplanations = new Map();
  */
 const getPredictionExplanation = asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT *
-     FROM predictions
-     WHERE id = $1
-       AND user_id = $2`,
-    [req.params.id, req.user.id]
+    `SELECT * FROM predictions WHERE id = $1`,
+    [req.params.id]
   );
 
   if (rows.length === 0) {
@@ -351,6 +381,10 @@ const getPredictionExplanation = asyncHandler(async (req, res) => {
   }
 
   const predictionRecord = rows[0];
+  const isAdmin = String(req.user.role || '').toLowerCase().trim() === 'admin';
+  if (predictionRecord.user_id !== req.user.id && !isAdmin) {
+    throw new HttpError(403, "Forbidden: You do not have permission to access this prediction record.");
+  }
 
   // 1. Check if explanation is already cached in database
   if (predictionRecord.explanation && typeof predictionRecord.explanation === 'object') {
@@ -524,20 +558,44 @@ const listHistory = asyncHandler(async (req, res) => {
  */
 const getHistoryItem = asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
-    `${RECORD_SELECT}
-     WHERE p.id = $1
-       AND p.user_id = $2`,
-    [req.params.id, req.user.id]
+    `${RECORD_SELECT} WHERE p.id = $1`,
+    [req.params.id]
   );
 
   if (rows.length === 0) {
     throw new HttpError(404, "Prediction not found.");
   }
 
+  const record = rows[0];
+  const isAdmin = String(req.user.role || '').toLowerCase().trim() === 'admin';
+  if (record.user_id !== req.user.id && !isAdmin) {
+    throw new HttpError(403, "Forbidden: You do not have permission to access this prediction record.");
+  }
+
+  // Audit logging for administrative inspection of patient prediction
+  if (isAdmin && record.user_id !== req.user.id) {
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs (user_id, admin_email, action, target_type, target_id, details)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          req.user.id,
+          req.user.email || 'admin@cardiosight.local',
+          'ADMIN_VIEW_PATIENT_PREDICTION',
+          'prediction',
+          record.id,
+          JSON.stringify({ patientId: record.user_id, riskScore: record.risk_score, riskLevel: record.risk_level })
+        ]
+      );
+    } catch (auditErr) {
+      console.warn('[predictionController] Failed to record audit log:', auditErr.message);
+    }
+  }
+
   res.json({
     success: true,
     message: "Prediction retrieved.",
-    data: serializeRecord(rows[0]),
+    data: serializeRecord(record),
   });
 });
 
@@ -549,23 +607,30 @@ const getHistoryItem = asyncHandler(async (req, res) => {
  * DELETE /api/history/:id
  */
 const deleteHistoryItem = asyncHandler(async (req, res) => {
-  const { rowCount } = await pool.query(
-    `DELETE FROM predictions
-     WHERE id = $1
-       AND user_id = $2`,
-    [req.params.id, req.user.id]
+  const { rows } = await pool.query(
+    `SELECT id, user_id FROM predictions WHERE id = $1`,
+    [req.params.id]
   );
 
-  if (rowCount === 0) {
+  if (rows.length === 0) {
     throw new HttpError(404, "Prediction not found.");
   }
+
+  const record = rows[0];
+  const isAdmin = String(req.user.role || '').toLowerCase().trim() === 'admin';
+  if (record.user_id !== req.user.id && !isAdmin) {
+    throw new HttpError(403, "Forbidden: You do not have permission to delete this prediction record.");
+  }
+
+  await pool.query(
+    `DELETE FROM predictions WHERE id = $1`,
+    [req.params.id]
+  );
 
   res.json({
     success: true,
     message: "Prediction record deleted.",
-    data: {
-      message: "Prediction record deleted.",
-    },
+    data: { id: req.params.id },
   });
 });
 

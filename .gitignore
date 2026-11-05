@@ -27,3 +27,7 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Compiled native binaries
+Backend/bin/ocr_tool
+*.log
+

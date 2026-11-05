@@ -18,9 +18,6 @@ import { BreadcrumbsComponent } from '../breadcrumbs/breadcrumbs.component';
       [class.collapsed]="ui.sidebarCollapsed()"
       [class.mobile-open]="ui.mobileSidebarOpen()"
     >
-      <div class="ambient ambient-a" aria-hidden="true"></div>
-      <div class="ambient ambient-b" aria-hidden="true"></div>
-
       <aside class="sidebar-area">
         <app-sidebar />
       </aside>
@@ -42,12 +39,6 @@ import { BreadcrumbsComponent } from '../breadcrumbs/breadcrumbs.component';
           </div>
         </div>
       </div>
-
-      <button class="fab" (click)="newPrediction()" [attr.aria-label]="'Start a new prediction'">
-        <span class="fab-halo" aria-hidden="true"></span>
-        <mat-icon>add</mat-icon>
-        <span class="fab-label">New prediction</span>
-      </button>
     </div>
   `,
   styles: [
@@ -56,29 +47,7 @@ import { BreadcrumbsComponent } from '../breadcrumbs/breadcrumbs.component';
         min-height: 100vh;
         display: flex;
         position: relative;
-      }
-      .ambient {
-        position: fixed;
-        border-radius: 50%;
-        filter: blur(90px);
-        z-index: 0;
-        pointer-events: none;
-      }
-      .ambient-a {
-        width: 520px;
-        height: 520px;
-        background: radial-gradient(closest-side, rgba(229, 57, 53, 0.1), transparent);
-        top: -140px;
-        right: -120px;
-        animation: aurora-shift 16s ease-in-out infinite;
-      }
-      .ambient-b {
-        width: 460px;
-        height: 460px;
-        background: radial-gradient(closest-side, rgba(21, 101, 192, 0.09), transparent);
-        bottom: -120px;
-        left: 20%;
-        animation: aurora-shift 18s ease-in-out -8s infinite;
+        background-color: var(--background);
       }
       .sidebar-area {
         position: fixed;
@@ -112,12 +81,15 @@ import { BreadcrumbsComponent } from '../breadcrumbs/breadcrumbs.component';
         max-width: var(--content-max);
         width: 100%;
         margin: 0 auto;
+        box-sizing: border-box;
       }
       .breadcrumb-row {
         margin-bottom: 18px;
       }
       .router-host {
         animation: fade-in 0.35s var(--ease-out) both;
+        width: 100%;
+        min-width: 0;
       }
       .mobile-backdrop {
         display: none;
@@ -151,14 +123,6 @@ import { BreadcrumbsComponent } from '../breadcrumbs/breadcrumbs.component';
         height: 26px;
         width: 26px;
         transition: transform var(--ease-spring);
-      }
-      .fab-halo {
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        border: 2px solid rgba(255, 255, 255, 0.55);
-        animation: pulse-ring 2.6s ease-out infinite;
-        pointer-events: none;
       }
       .fab-label {
         white-space: nowrap;

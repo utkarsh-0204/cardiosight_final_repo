@@ -16,7 +16,7 @@ const ML_TMT_URL = `${ML_URL}/api/predict-tmt`;
  */
 function isUnprovided(str) {
   if (!str || typeof str !== 'string') return true;
-  return /^(?:not\s+(?:provided|specified|available|calculated|applicable)|n\/?a|none(?:\s+reported)?|nil|unspecified|blank|[-_—\s]+)$/i.test(str.trim());
+  return /^(?:not\s+(?:provided|specified|available|calculated|applicable|reported)|n\/?a|none(?:\s+reported)?|nil|unspecified|blank|[-_—\s]+)$/i.test(str.trim());
 }
 
 /**
@@ -32,351 +32,657 @@ function cleanReportText(text) {
 }
 
 /**
- * Parses exercise duration into total decimal minutes.
- * Supports:
- * - "Exercise duration (minutes): 8.5"
- * - "Total exercise duration: 08:30" (MM:SS)
- * - "Duration: 8 min 45 sec"
- * - "9.0 minutes"
- * @param {string} text
+ * Parses full text into individual pages with page numbers.
+ * Supports native OCR markers `-- (\d+) of (\d+) --` and form-feed delimiters.
+ * @param {string} fullText
  */
-function parseExerciseDuration(text) {
-  const lineMatch = text.match(/(?:exercise\s+time|total\s+(?:exercise\s+)?duration|duration|exercise\s+duration)\s*(?:\([^)]*\))?\s*[:=]?\s*(?:(\d{1,2}):(\d{2})|(\d{1,2}(?:\.\d{1,2})?)\s*(?:min(?:ute)?s?)?(?:\s*(\d{1,2})\s*sec)?)/i);
-  if (!lineMatch) return null;
+function parsePages(fullText) {
+  if (!fullText) return [];
+  const pageRegex = /-- (\d+) of (\d+) --/g;
+  const pages = [];
+  let match;
+  let lastIndex = 0;
+  let lastPageNum = 1;
 
-  // Format MM:SS
-  if (lineMatch[1] !== undefined && lineMatch[2] !== undefined) {
-    const mins = Number.parseInt(lineMatch[1], 10);
-    const secs = Number.parseInt(lineMatch[2], 10);
-    const total = Number((mins + secs / 60).toFixed(1));
-    return Number.isFinite(total) && total > 0 && total <= 60 ? total : null;
-  }
-
-  // Format X.Y min or X min Y sec
-  if (lineMatch[3] !== undefined) {
-    const mins = Number.parseFloat(lineMatch[3]);
-    const secs = lineMatch[4] ? Number.parseInt(lineMatch[4], 10) : 0;
-    const total = Number((mins + secs / 60).toFixed(1));
-    return Number.isFinite(total) && total > 0 && total <= 60 ? total : null;
-  }
-
-  return null;
-}
-
-/**
- * Parses peak/maximum heart rate achieved during exercise stress (thalach).
- * Matches:
- * "Maximum heart rate achieved (bpm): 154", "Max HR Achieved: 156 bpm",
- * "Peak Heart Rate: 160", "Thalach: 148", "Max HR achieved 150"
- * Does NOT match "Maximum heart rate achieved (bpm) Not provided"
- * @param {string} text
- */
-function parsePeakHeartRate(text) {
-  const re = /(?:max(?:imum)?\s+(?:heart\s+rate|hr)(?:\s+achieved)?|peak\s+(?:heart\s+rate|hr)|thalach|max\s+hr\s+achieved)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{2,3})(?!\d)/i;
-  const match = text.match(re);
-  if (!match) return null;
-
-  const num = Number.parseInt(match[1], 10);
-  if (Number.isFinite(num) && num >= 40 && num <= 250) {
-    return num;
-  }
-  return null;
-}
-
-/**
- * Parses resting heart rate from TMT report.
- * @param {string} text
- */
-function parseRestingHeartRate(text) {
-  const re = /(?:rest(?:ing)?\s+(?:heart\s+rate|hr)|basal\s+hr)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{2,3})(?!\d)/i;
-  const match = text.match(re);
-  if (!match) return null;
-
-  const num = Number.parseInt(match[1], 10);
-  if (Number.isFinite(num) && num >= 35 && num <= 200) {
-    return num;
-  }
-  return null;
-}
-
-/**
- * Parses target heart rate achieved percentage.
- * @param {string} text
- */
-function parseTargetHrPercent(text) {
-  const re = /(?:target\s+(?:hr|heart\s+rate)\s*(?:achieved)?|%\s*of\s*target\s*hr|%\s*target|%\s*mphr|%\s*of\s*age-predicted\s*max(?:imum)?)\s*[:=]?\s*(\d{2,3})\s*%/i;
-  let match = text.match(re);
-  if (!match) {
-    match = text.match(/(\d{2,3})%\s*(?:of\s*(?:age-predicted\s*)?max(?:imum)?|\s*target\s*hr|mphr)/i);
-  }
-  if (!match) return null;
-
-  const num = Number.parseInt(match[1], 10);
-  return Number.isFinite(num) && num >= 30 && num <= 150 ? num : null;
-}
-
-/**
- * Parses METs (Metabolic Equivalents of Task) achieved.
- * Matches:
- * "METs achieved: 10.5", "Workload: 10.2 METs", "Functional capacity: 9.0 METs", "METs achieved 10.2"
- * @param {string} text
- */
-function parseMets(text) {
-  const re = /(?:workload|mets?\s*(?:achieved)?|functional\s+capacity)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{1,2}(?:\.\d{1,2})?)\s*(?:mets?)?/i;
-  const match = text.match(re);
-  if (!match) return null;
-
-  const num = Number.parseFloat(match[1]);
-  return Number.isFinite(num) && num >= 1.0 && num <= 30.0 ? num : null;
-}
-
-/**
- * Parses exercise-induced angina (exang: 0 = No, 1 = Yes).
- * Returns null if not provided or unmentioned.
- * @param {string} text
- */
-function parseExerciseAngina(text) {
-  const lineMatch = text.match(/(?:exercise[\s-]?(?:induced\s+)?angina|angina)\s*(?:\([^)]*\))?\s*[:=]\s*([^\n\r]+)/i);
-  if (lineMatch) {
-    const raw = lineMatch[1].trim();
-    if (isUnprovided(raw)) return null;
-    if (/(?:yes|present|positive|induced|experienced|limiting)/i.test(raw)) return 1;
-    if (/(?:no|absent|negative|denies|none)/i.test(raw)) return 0;
-  }
-
-  // Check template line without colon e.g. "Exercise-induced angina Not provided"
-  const templateMatch = text.match(/(?:exercise[\s-]?(?:induced\s+)?angina)\s+([^\n\r]+)/i);
-  if (templateMatch && isUnprovided(templateMatch[1])) {
-    return null;
-  }
-
-  if (/(?:chest\s+pain|angina)\s+(?:during|induced\s+by)\s+exercise/i.test(text)) return 1;
-  if (/no\s+(?:angina|chest\s+pain)/i.test(text) || /negative\s+for\s+(?:angina|chest\s+pain)/i.test(text)) return 0;
-
-  return null;
-}
-
-/**
- * Parses peak ST depression relative to rest (oldpeak in mm).
- * Returns null if not provided.
- * @param {string} text
- */
-function parseStDepression(text) {
-  const lineMatch = text.match(/(?:st[\s-]?(?:segment\s+)?depression|peak\s+st\s+depression|\boldpeak\b)\s*(?:\([^)]*\))?\s*[:=]?\s*([^\n\r]+)/i);
-  if (lineMatch) {
-    const raw = lineMatch[1].trim();
-    if (isUnprovided(raw)) return null;
-    const numMatch = raw.match(/(\d{1,2}(?:\.\d{1,2})?)/);
-    if (numMatch) {
-      const num = Number.parseFloat(numMatch[1]);
-      return Number.isFinite(num) && num >= 0.0 && num <= 10.0 ? num : null;
+  while ((match = pageRegex.exec(fullText)) !== null) {
+    if (lastIndex > 0) {
+      pages.push({ pageNum: lastPageNum, text: fullText.substring(lastIndex, match.index) });
     }
-    if (/no(?:ne)?|absent|nil|zero/i.test(raw)) return 0.0;
+    lastPageNum = parseInt(match[1], 10);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < fullText.length) {
+    pages.push({ pageNum: lastPageNum, text: fullText.substring(lastIndex) });
   }
 
-  // Check for explicit "no ST depression" on a single line
-  const lines = text.split(/\r?\n/);
-  for (const line of lines) {
-    if (/\b(?:no|nil|zero)\s+st[\s-]?(?:segment\s+)?depression\b/i.test(line)) {
-      return 0.0;
+  if (pages.length === 0) {
+    const ffPages = fullText.split(/\f+/);
+    if (ffPages.length > 1) {
+      return ffPages.map((pText, i) => ({ pageNum: i + 1, text: pText }));
     }
+    return [{ pageNum: 1, text: fullText }];
   }
-
-  return null;
+  return pages;
 }
 
 /**
- * Parses peak ST segment slope (slope: 1 = Upsloping, 2 = Flat / Horizontal, 3 = Downsloping).
- * Returns null if not provided.
- * @param {string} text
+ * Filters out completely unrelated clinical check-up pages (blood, urine, X-rays, invoices)
+ * and isolates TMT-relevant pages.
+ * @param {Array<{pageNum: number, text: string}>} allPages
  */
-function parsePeakStSlope(text) {
-  const lineMatch = text.match(/(?:peak\s+st[\s-]?(?:segment\s+)?slope|st\s+slope|\bslope\b)\s*(?:\([^)]*\))?\s*[:=]\s*([^\n\r]+)/i);
-  if (lineMatch) {
-    const raw = lineMatch[1].trim();
-    if (isUnprovided(raw)) return null;
-    if (/down[\s-]?sloping|3/i.test(raw)) return 3;
-    if (/flat|horizontal|2/i.test(raw)) return 2;
-    if (/up[\s-]?sloping|1/i.test(raw)) return 1;
-  }
+function filterTmtPages(allPages) {
+  if (allPages.length <= 1) return allPages;
 
-  const templateMatch = text.match(/(?:peak\s+st[\s-]?(?:segment\s+)?slope)\s+([^\n\r]+)/i);
-  if (templateMatch && isUnprovided(templateMatch[1])) return null;
+  const tmtPages = allPages.filter(p => {
+    const t = p.text.toLowerCase();
+    const hasTmtKeywords = (
+      t.includes('treadmill') ||
+      t.includes('bruce') ||
+      t.includes('exercise stress') ||
+      t.includes('exercise test') ||
+      t.includes('stress test') ||
+      t.includes('total exercise time') ||
+      t.includes('exercise time') ||
+      t.includes('maximum workload') ||
+      t.includes('maximum work load') ||
+      t.includes('hr achieved') ||
+      t.includes('myocardial ischaemia') ||
+      t.includes('myocardial ischemia') ||
+      t.includes('stage 1') ||
+      t.includes('stage 2') ||
+      t.includes('peak exercise') ||
+      t.includes('inducible ischemia') ||
+      t.includes('duke treadmill') ||
+      t.includes('mets')
+    );
 
-  if (/down[\s-]?sloping/i.test(text)) return 3;
-  if (/flat|horizontal/i.test(text)) return 2;
-  if (/up[\s-]?sloping/i.test(text)) return 1;
+    const isUnrelated = (
+      t.includes('x-ray chest') ||
+      t.includes('complete blood count') ||
+      t.includes('haemogram') ||
+      t.includes('urine routine') ||
+      t.includes('thyroid stimulating hormone') ||
+      t.includes('fasting glucose') ||
+      t.includes('fasting blood sugar') ||
+      t.includes('glycated haemoglobin') ||
+      t.includes('appointment email') ||
+      t.includes('agreement of') ||
+      t.includes('patient invoice')
+    ) && !t.includes('treadmill test') && !t.includes('total exercise time') && !t.includes('exercise stress');
 
-  return null;
+    return hasTmtKeywords && !isUnrelated;
+  });
+
+  return tmtPages.length > 0 ? tmtPages : allPages;
 }
 
 /**
- * Parses resting ECG finding (restecg: 0 = Normal, 1 = ST-T abnormality, 2 = LVH).
- * Returns null if not provided.
+ * Detects if an uploaded report intended for TMT is actually an ECG or other clinical document.
  * @param {string} text
+ * @param {Array<{pageNum: number, text: string}>} pages
  */
-function parseRestingEcg(text) {
-  const lineMatch = text.match(/(?:resting\s+ecg(?:\s+finding)?|restecg)\s*(?:\([^)]*\))?\s*[:=]\s*([^\n\r]+)/i);
-  if (lineMatch) {
-    const raw = lineMatch[1].trim();
-    if (isUnprovided(raw)) return null;
-    if (/left\s+ventricular\s+hypertrophy|lvh|2/i.test(raw)) return 2;
-    if (/st[\s-]?t\s+(?:wave\s+)?abnormal|t-?wave\s+changes|1/i.test(raw)) return 1;
-    if (/normal|wnl|0/i.test(raw)) return 0;
+function detectDocumentMismatch(text, pages = []) {
+  if (!text || typeof text !== 'string') return null;
+
+  const tmtKeywords = [
+    /\btreadmill\b/i,
+    /\btmt\b/i,
+    /\bexercise\s+(?:stress|tolerance|ecg|test)\b/i,
+    /\bstress\s+test\b/i,
+    /\bbruce(?:\s+protocol)?\b/i,
+    /\bmets\b/i,
+    /\bmaximum\s+work\s*load\b/i,
+    /\bworkload\b/i,
+    /\bstage\s+[1-5]\b/i,
+    /\bmax(?:imum)?\s+(?:heart\s+rate|hr)(?:\s+achieved)?\b/i,
+    /\bpeak\s+(?:heart\s+rate|hr)\b/i,
+    /\bexercise\s+(?:duration|time)\b/i,
+    /\btarget\s+hr\b/i,
+    /\b%?\s*mphr\b/i,
+    /\b(?:inducible|provocable)\s+ischa?emia\b/i,
+    /\bduke\s+treadmill\s+score\b/i,
+    /\bexercise[\s-]induced\b/i
+  ];
+
+  const ecgKeywords = [
+    /\b(?:pr|p-r)\s*(?:interval|[:=])\b/i,
+    /\bqrs\s*(?:duration|width|complex|[:=])\b/i,
+    /\b(?:qt\s*[\/|]\s*qtc|qi\/qtc)\b/i,
+    /\bqtc\s*(?:interval|[:=])\b/i,
+    /\bp[\s\/]qrs[\s\/]t\b/i,
+    /\brv[1-6]\s*[\/|\+]\s*sv[1-6]\b/i,
+    /\b25\s*mm\/s\b/i,
+    /\b10\s*mm\/mv\b/i,
+    /\b12[\s-]lead\s+(?:electrocardiogram|ecg|ekg)\b/i,
+    /\bsinus\s+(?:arrhythmia|bradycardia|tachycardia|rhythm)\b/i,
+    /\bflat\s+t\s+wave\b/i,
+    /\bsemip\b/i,
+    /\bventricular\s+rate\b/i
+  ];
+
+  const tmtMatches = tmtKeywords.filter(re => re.test(text)).length;
+  const ecgMatches = ecgKeywords.filter(re => re.test(text)).length;
+
+  if (ecgMatches >= 2 && tmtMatches === 0) {
+    return {
+      isMismatch: true,
+      detectedType: 'ECG',
+      message: 'This appears to be an ECG report, not a TMT report. Please upload the correct document.'
+    };
   }
 
-  const templateMatch = text.match(/(?:resting\s+ecg\s+finding)\s+([^\n\r]+)/i);
-  if (templateMatch && isUnprovided(templateMatch[1])) return null;
-
-  if (/left\s+ventricular\s+hypertrophy|\blvh\b/i.test(text)) return 2;
-  if (/st[\s-]?t\s+(?:wave\s+)?abnormal/i.test(text)) return 1;
-  if (/resting\s+ecg\s*[:=]?\s*normal/i.test(text)) return 0;
-
-  return null;
-}
-
-/**
- * Parses reported treadmill stress conclusion / diagnosis.
- * Strips template boilerplates and disclaimers.
- * @param {string} text
- */
-function parseConclusion(text) {
-  const concMatch = text.match(/(?:reported\s+exercise\s+conclusion\s*\/?\s*diagnosis|conclusion|impression|final\s+result|summary)\s*[:=]\s*([^\n\r]+)/i);
-  if (concMatch && concMatch[1]) {
-    const raw = concMatch[1].trim().replace(/^[:=\s]+/, '');
-    if (!isUnprovided(raw)) {
-      const clean = raw.split(/\b(?:Clinical note|This report template|Signed by)\b/i)[0].trim();
-      if (clean && !isUnprovided(clean)) {
-        return clean;
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * Parses protocol if stated in report.
- * @param {string} text
- */
-function parseProtocol(text) {
-  if (/modified\s+bruce/i.test(text)) return 'Modified Bruce';
-  if (/bruce/i.test(text)) return 'Standard Bruce';
-  if (/naughton/i.test(text)) return 'Naughton';
-  if (/balke/i.test(text)) return 'Balke';
   return null;
 }
 
 /**
  * Parses raw text from a TMT report and extracts structured exercise stress parameters.
+ * Supports multi-page checkups, image OCR reports, and extracts page references.
+ * Never fabricates missing values or uncalculated Duke Treadmill Scores.
  * @param {string} text
  */
 function parseTmtText(text) {
   if (!text || typeof text !== 'string') {
     return {
       extractionStatus: 'empty',
+      isMismatch: false,
       fields: getEmptyFields(),
       reportedConclusion: null,
       summary: null,
+      extractedFieldsSummary: [],
+      missingFieldsSummary: [],
       warnings: ['No readable text found in TMT report.']
     };
   }
 
   const cleanText = cleanReportText(text);
+  const allPages = parsePages(cleanText);
 
-  // 1. Peak Heart Rate / Maximum HR Achieved (thalach)
-  const peakHr = parsePeakHeartRate(cleanText);
+  // Document mismatch detection
+  const mismatch = detectDocumentMismatch(cleanText, allPages);
+  if (mismatch) {
+    return {
+      extractionStatus: 'document_mismatch',
+      isMismatch: true,
+      detectedType: mismatch.detectedType,
+      fields: getEmptyFields(),
+      reportedConclusion: null,
+      summary: null,
+      extractedFieldsSummary: [],
+      missingFieldsSummary: [
+        'Peak Heart Rate (thalach)',
+        'Exercise Duration',
+        'Workload (METs)',
+        'ST Depression (oldpeak)',
+        'Peak ST Segment Slope',
+        'Exercise-Induced Angina'
+      ],
+      warnings: [mismatch.message]
+    };
+  }
 
-  // 2. Resting Heart Rate
-  const restingHr = parseRestingHeartRate(cleanText);
+  const tmtPages = filterTmtPages(allPages);
 
-  // 3. Target Heart Rate Achieved (%)
-  const targetHrPercent = parseTargetHrPercent(cleanText);
+  // 1. Exercise Protocol
+  let protocol = null;
+  let protocolPage = null;
+  let protocolRaw = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:protoc[ao]l\s+(?:used\s+)?[:=]?\s*|protocol:\s*|according\s+to\s+the\s+)(bruce|modified\s+bruce|naughton|balke)/i);
+    if (m) {
+      protocol = m[1].toLowerCase().includes('bruce') ? 'Standard Bruce' : m[1];
+      protocolRaw = m[1];
+      protocolPage = p.pageNum;
+      break;
+    }
+  }
+  if (!protocol) {
+    for (const p of tmtPages) {
+      if (/modified\s+bruce/i.test(p.text)) {
+        protocol = 'Modified Bruce';
+        protocolRaw = 'Modified Bruce';
+        protocolPage = p.pageNum;
+        break;
+      } else if (/bruce/i.test(p.text)) {
+        protocol = 'Standard Bruce';
+        protocolRaw = 'Bruce';
+        protocolPage = p.pageNum;
+        break;
+      }
+    }
+  }
 
-  // 4. METs Achieved
-  const mets = parseMets(cleanText);
+  // 2. Exercise Duration (minutes)
+  let exerciseDurationMinutes = null;
+  let durationFormatted = null;
+  let durationPage = null;
+  let durationRaw = null;
+  for (const p of tmtPages) {
+    const lineMatch = p.text.match(/(?:total\s+exercise\s+time|exercise\s+time|total\s+(?:exercise\s+)?duration|duration|exercise\s+duration)\s*(?:\([^)]*\))?\s*[:=]?\s*(?:(\d{1,2}):(\d{2})|(\d{1,2}(?:\.\d{1,2})?)\s*(?:min(?:ute)?s?)?(?:\s*(\d{1,2})\s*sec)?)/i);
+    if (lineMatch) {
+      if (lineMatch[1] !== undefined && lineMatch[2] !== undefined) {
+        const mins = Number.parseInt(lineMatch[1], 10);
+        const secs = Number.parseInt(lineMatch[2], 10);
+        const total = Number((mins + secs / 60).toFixed(2));
+        if (Number.isFinite(total) && total > 0 && total <= 60) {
+          exerciseDurationMinutes = total;
+          durationFormatted = `${lineMatch[1].padStart(2, '0')}:${lineMatch[2].padStart(2, '0')}`;
+          durationRaw = `${durationFormatted} (${total} min)`;
+          durationPage = p.pageNum;
+          break;
+        }
+      } else if (lineMatch[3] !== undefined) {
+        const mins = Number.parseFloat(lineMatch[3]);
+        const secs = lineMatch[4] ? Number.parseInt(lineMatch[4], 10) : 0;
+        const total = Number((mins + secs / 60).toFixed(2));
+        if (Number.isFinite(total) && total > 0 && total <= 60) {
+          exerciseDurationMinutes = total;
+          durationFormatted = secs > 0
+            ? `${Math.floor(mins).toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+            : `${mins}:00`;
+          durationRaw = `${durationFormatted} (${total} min)`;
+          durationPage = p.pageNum;
+          break;
+        }
+      }
+    }
+  }
 
-  // 5. Exercise Duration (minutes)
-  const exerciseDurationMinutes = parseExerciseDuration(cleanText);
+  // 3. Workload Achieved (METs)
+  let mets = null;
+  let metsPage = null;
+  let metsRaw = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:maximum\s+work\s*load|maximum\s+workload|work\s+level\s+of\s+max\.?\s*mets?|workload|mets?\s*(?:achieved)?|functional\s+capacity)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{1,2}[:.]\d{1,2})\s*(?:mets?)?/i);
+    if (m) {
+      const num = Number.parseFloat(m[1].replace(':', '.'));
+      if (Number.isFinite(num) && num >= 1.0 && num <= 30.0) {
+        mets = num;
+        metsRaw = `${m[1]} METs`;
+        metsPage = p.pageNum;
+        break;
+      }
+    }
+  }
 
-  // 6. Exercise-Induced Angina (exang: 0 = No, 1 = Yes, null = not found)
-  const exang = parseExerciseAngina(cleanText);
+  // 4. Resting Heart Rate (restingHR)
+  let restingHr = null;
+  let restingHrPage = null;
+  let restingHrRaw = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:resting\s+heart\s+rate\s+of|hr\s+at\s+rest|rest(?:ing)?\s+(?:heart\s+rate|hr)|basal\s+hr)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{2,3})(?!\d)/i);
+    if (m) {
+      const num = Number.parseInt(m[1], 10);
+      if (Number.isFinite(num) && num >= 35 && num <= 200) {
+        restingHr = num;
+        restingHrRaw = `${num} bpm`;
+        restingHrPage = p.pageNum;
+        break;
+      }
+    }
+  }
 
-  // 7. Peak ST Depression (oldpeak in mm)
-  const oldpeak = parseStDepression(cleanText);
+  // 5. Peak/Maximum Heart Rate (thalach)
+  let peakHr = null;
+  let peakHrPage = null;
+  let peakHrRaw = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:maximal\s+heart\s+rate\s+of|hr\s+achieved|max(?:imum)?\s+(?:heart\s+rate|hr)(?:\s+achieved)?|peak\s+(?:heart\s+rate|hr)|thalach|max\s+hr\s+achieved)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d{2,3})(?!\d)/i);
+    if (m) {
+      const num = Number.parseInt(m[1], 10);
+      if (Number.isFinite(num) && num >= 40 && num <= 250) {
+        peakHr = num;
+        peakHrRaw = `${num} bpm`;
+        peakHrPage = p.pageNum;
+        break;
+      }
+    }
+  }
 
-  // 8. ST Slope (1 = upsloping, 2 = flat, 3 = downsloping, null = not found)
-  const slope = parsePeakStSlope(cleanText);
+  // 6. Resting Blood Pressure
+  let restingBP = null;
+  let restingBpPage = null;
+  let restingBpRaw = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:resting\s+blood\s+pressure\s+of|bp\s+at\s+rest|rest(?:ing)?\s+bp)\s*[:=]?\s*(\d{2,3}\s*\/\s*\d{2,3})/i);
+    if (m) {
+      restingBP = m[1].replace(/\s+/g, '');
+      restingBpRaw = `${restingBP} mmHg`;
+      restingBpPage = p.pageNum;
+      break;
+    }
+  }
 
-  // 9. Resting ECG (restecg: 0 = normal, 1 = ST-T abnormality, 2 = LVH, null = not found)
-  const restecg = parseRestingEcg(cleanText);
+  // 7. Peak Exercise Blood Pressure
+  let peakBP = null;
+  let peakBpPage = null;
+  let peakBpRaw = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:maximum\s+blood\s+pressure\s+of|max(?:imum)?\s+bp|peak\s+(?:exercise\s+)?bp|stage\s+3\s+bp)\s*[:=]?\s*(\d{2,3}\s*\/\s*\d{2,3})/i);
+    if (m) {
+      peakBP = m[1].replace(/\s+/g, '');
+      peakBpRaw = `${peakBP} mmHg`;
+      peakBpPage = p.pageNum;
+      break;
+    }
+  }
 
-  // 10. Exercise Protocol
-  const protocol = parseProtocol(cleanText);
+  // 8. Target Heart Rate Achieved (%)
+  let targetHrPercent = null;
+  let targetHrPage = null;
+  for (const p of tmtPages) {
+    let m = p.text.match(/(?:target\s+(?:hr|heart\s+rate)\s*(?:achieved)?|%\s*of\s*target\s*hr|%\s*target|%\s*mphr|%\s*of\s*age-predicted\s*max(?:imum)?)\s*[:=]?\s*(\d{2,3})\s*%/i);
+    if (!m) {
+      m = p.text.match(/(\d{2,3})\s*%\s*(?:of\s*(?:age-predicted\s*)?max(?:imum)?|\s*target\s*hr|mphr)/i);
+    }
+    if (m) {
+      const num = Number.parseInt(m[1], 10);
+      if (Number.isFinite(num) && num >= 30 && num <= 150) {
+        targetHrPercent = num;
+        targetHrPage = p.pageNum;
+        break;
+      }
+    }
+  }
 
-  // 11. Reported Conclusion / Diagnosis
-  const conclusion = parseConclusion(cleanText);
+  // 9. ST Depression (oldpeak in mm)
+  let oldpeak = null;
+  let oldpeakPage = null;
+  let oldpeakRaw = null;
+  for (const p of tmtPages) {
+    const maxDepMatch = p.text.match(/(?:maximum\s+depression)\s*[:=]+\s*([^\n\r]+)/i);
+    const lineMatch = p.text.match(/(?:st[\s-]?(?:segment\s+)?depression|\boldpeak\b)\s*(?:\([^)]*\))?\s*[:=]+\s*([^\n\r]+)/i);
+    const matchToUse = maxDepMatch || lineMatch;
+    if (matchToUse) {
+      const raw = matchToUse[1].trim();
+      if (/^[-_—\s]+$/.test(raw) || /none|nil|absent|zero/i.test(raw)) {
+        oldpeak = 0.0;
+        oldpeakRaw = 'No depression reported';
+        oldpeakPage = p.pageNum;
+        break;
+      } else if (!isUnprovided(raw)) {
+        const numMatch = raw.match(/(\d{1,2}(?:\.\d{1,2})?)/);
+        if (numMatch) {
+          const num = Number.parseFloat(numMatch[1]);
+          if (Number.isFinite(num) && num >= 0.0 && num <= 10.0) {
+            oldpeak = num;
+            oldpeakRaw = `${num} mm`;
+            oldpeakPage = p.pageNum;
+            break;
+          }
+        }
+      }
+    }
+    // Explicit phrase on line
+    if (/\b(?:no|nil|zero)\s+st[\s-]?(?:segment\s+)?depression\b/i.test(p.text)) {
+      oldpeak = 0.0;
+      oldpeakRaw = 'No depression reported';
+      oldpeakPage = p.pageNum;
+      break;
+    }
+  }
+
+  // 10. Peak ST Segment Slope (1 = Upsloping, 2 = Flat, 3 = Downsloping)
+  let slope = null;
+  let slopePage = null;
+  let slopeRaw = null;
+  for (const p of tmtPages) {
+    const lineMatch = p.text.match(/(?:peak\s+st[\s-]?(?:segment\s+)?slope|st\s+slope|\bslope\b)\s*(?:\([^)]*\))?\s*[:=]\s*([^\n\r]+)/i);
+    if (lineMatch) {
+      const raw = lineMatch[1].trim();
+      if (!isUnprovided(raw)) {
+        if (/down[\s-]?sloping|3/i.test(raw)) { slope = 3; slopeRaw = 'Downsloping'; slopePage = p.pageNum; break; }
+        if (/flat|horizontal|2/i.test(raw)) { slope = 2; slopeRaw = 'Flat / Horizontal'; slopePage = p.pageNum; break; }
+        if (/up[\s-]?sloping|1/i.test(raw)) { slope = 1; slopeRaw = 'Upsloping'; slopePage = p.pageNum; break; }
+      }
+    }
+  }
+
+  // 11. Exercise-Induced Angina (exang: 0 = No, 1 = Yes)
+  let exang = null;
+  let exangPage = null;
+  let exangRaw = null;
+  for (const p of tmtPages) {
+    const lineMatch = p.text.match(/(?:symptoms\s+on\s+stress|exercise[\s-]?(?:induced\s+)?angina)\s*(?:\([^)]*\))?\s*[:=]\s*([^\n\r]+)/i);
+    const chestPainMatch = p.text.match(/summary:\s*chest\s+pain:\s*([^\n\r]+)/i);
+
+    if (lineMatch) {
+      const raw = lineMatch[1].trim();
+      if (/^[-_—\s]+$/.test(raw) || /none|nil|negative|absent|no/i.test(raw)) {
+        exang = 0;
+        exangRaw = 'No symptoms reported';
+        exangPage = p.pageNum;
+        break;
+      }
+      if (/yes|present|positive|induced|limiting/i.test(raw)) {
+        exang = 1;
+        exangRaw = 'Angina induced';
+        exangPage = p.pageNum;
+        break;
+      }
+    }
+    if (chestPainMatch) {
+      const raw = chestPainMatch[1].trim();
+      if (/none|nil|negative|absent|no/i.test(raw)) {
+        exang = 0;
+        exangRaw = 'No symptoms reported';
+        exangPage = p.pageNum;
+        break;
+      }
+    }
+  }
+  if (exang === null) {
+    for (const p of tmtPages) {
+      if (/no\s+(?:angina|chest\s+pain)/i.test(p.text) || /negative\s+for\s+(?:angina|chest\s+pain)/i.test(p.text)) {
+        exang = 0;
+        exangRaw = 'No symptoms reported';
+        exangPage = p.pageNum;
+        break;
+      }
+      if (/(?:chest\s+pain|angina)\s+(?:during|induced\s+by)\s+exercise/i.test(p.text)) {
+        exang = 1;
+        exangRaw = 'Angina induced';
+        exangPage = p.pageNum;
+        break;
+      }
+    }
+  }
+
+  // 12. Resting ECG Finding (0 = Normal, 1 = ST-T abnormality, 2 = LVH)
+  let restecg = null;
+  let restecgPage = null;
+  let restecgRaw = null;
+
+  // First search for dedicated resting ECG pages in the dossier
+  const restingEcgPageObj = allPages.find(p => {
+    const t = p.text.toLowerCase();
+    return (t.includes('ecg report') || t.includes('12-lead') || t.includes('electrocardiogram') || t.includes('normal sinus rhythm')) &&
+           (t.includes('left ventricular hypertrophy') || t.includes('lvh') || t.includes('pr interval') || t.includes('qrs duration'));
+  });
+
+  const pagesToCheckForRestEcg = restingEcgPageObj ? [restingEcgPageObj, ...tmtPages] : tmtPages;
+  for (const p of pagesToCheckForRestEcg) {
+    const t = p.text.toLowerCase();
+    if (t.includes('voltage criteria for left ventricular hypertrophy') || /\blvh\b/i.test(p.text)) {
+      restecg = 2;
+      restecgRaw = 'Left ventricular hypertrophy (LVH)';
+      restecgPage = p.pageNum;
+      break;
+    }
+    const lineMatch = p.text.match(/(?:resting\s+ecg(?:\s+finding)?|restecg)\s*(?:\([^)]*\))?\s*[:=]\s*([^\n\r]+)/i);
+    if (lineMatch) {
+      const raw = lineMatch[1].trim();
+      if (!isUnprovided(raw)) {
+        if (/left\s+ventricular\s+hypertrophy|lvh|2/i.test(raw)) {
+          restecg = 2;
+          restecgRaw = 'Left ventricular hypertrophy (LVH)';
+          restecgPage = p.pageNum;
+          break;
+        }
+        if (/st[\s-]?t\s+(?:wave\s+)?abnormal|t-?wave\s+changes|1/i.test(raw)) {
+          restecg = 1;
+          restecgRaw = 'ST-T abnormality';
+          restecgPage = p.pageNum;
+          break;
+        }
+        if (/normal|wnl|0/i.test(raw)) {
+          restecg = 0;
+          restecgRaw = 'Normal sinus rhythm';
+          restecgPage = p.pageNum;
+          break;
+        }
+      }
+    }
+  }
+
+  // 13. Interpretation & Conclusion
+  let tmtResult = null;
+  let reportedConclusion = null;
+  let conclusionPage = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:reported\s+exercise\s+conclusion\s*\/?\s*diagnosis|conclusion|impression|final\s+result|diagnosis)\s*[:=]\s*([^\n\r]+(?:\n[^\n\r]+)?)/i);
+    if (m && m[1]) {
+      const raw = m[1].replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').split(/\b(?:Clinical note|This report template|Signed by|\*\*END|Checked by|Technician|Physician|Dr\.)\b/i)[0].trim().replace(/^[:=\s]+/, '');
+      if (!isUnprovided(raw)) {
+        if (/negative\s+for\s+(?:provocable\s+|inducible\s+)?(?:myocardial\s+)?ischa?emia/i.test(raw) || /stress\s+test\s+is\s+negative/i.test(raw)) {
+          tmtResult = 'Negative for inducible ischemia';
+          reportedConclusion = 'Stress test is negative for provocable myocardial ischaemia.';
+          conclusionPage = p.pageNum;
+          break;
+        } else if (/positive\s+for\s+(?:provocable\s+|inducible\s+)?(?:myocardial\s+)?ischa?emia/i.test(raw) || /stress\s+test\s+is\s+positive/i.test(raw)) {
+          tmtResult = 'Positive for inducible ischemia';
+          reportedConclusion = raw;
+          conclusionPage = p.pageNum;
+          break;
+        } else {
+          reportedConclusion = raw;
+          conclusionPage = p.pageNum;
+          break;
+        }
+      }
+    }
+  }
+
+  // 14. Duke Treadmill Score (DTS) - DO NOT calculate or fabricate if not reported
+  let reportedDts = null;
+  let dtsPage = null;
+  for (const p of tmtPages) {
+    const m = p.text.match(/(?:duke\s+treadmill\s+score|dts)\s*[:=]\s*([+-]?\d+(?:\.\d+)?)/i);
+    if (m) {
+      reportedDts = Number.parseFloat(m[1]);
+      dtsPage = p.pageNum;
+      break;
+    }
+  }
 
   const durationField = {
     value: exerciseDurationMinutes,
+    formatted: durationFormatted,
     unit: 'minutes',
-    status: exerciseDurationMinutes !== null ? 'extracted' : 'not_found'
+    status: exerciseDurationMinutes !== null ? 'extracted' : 'not_found',
+    page: durationPage,
+    rawText: durationFormatted || durationRaw
   };
 
   const restingHrField = {
     value: restingHr,
     unit: 'bpm',
-    status: restingHr !== null ? 'extracted' : 'not_found'
+    status: restingHr !== null ? 'extracted' : 'not_found',
+    page: restingHrPage,
+    rawText: restingHrRaw
   };
 
   const fields = {
     thalach: {
       value: peakHr,
       unit: 'bpm',
-      status: peakHr !== null ? 'extracted' : 'not_found'
+      status: peakHr !== null ? 'extracted' : 'not_found',
+      page: peakHrPage,
+      rawText: peakHrRaw
     },
     restingHr: restingHrField,
     restingHR: restingHrField,
+    restingBP: {
+      value: restingBP,
+      unit: 'mmHg',
+      status: restingBP !== null ? 'extracted' : 'not_found',
+      page: restingBpPage,
+      rawText: restingBpRaw
+    },
+    peakBP: {
+      value: peakBP,
+      unit: 'mmHg',
+      status: peakBP !== null ? 'extracted' : 'not_found',
+      page: peakBpPage,
+      rawText: peakBpRaw
+    },
     targetHrPercent: {
       value: targetHrPercent,
       unit: '%',
-      status: targetHrPercent !== null ? 'extracted' : 'not_found'
+      status: targetHrPercent !== null ? 'extracted' : 'not_found',
+      page: targetHrPage
     },
     mets: {
       value: mets,
       unit: 'METs',
-      status: mets !== null ? 'extracted' : 'not_found'
+      status: mets !== null ? 'extracted' : 'not_found',
+      page: metsPage,
+      rawText: metsRaw
     },
     exerciseDurationMinutes: durationField,
     durationMinutes: durationField,
+    durationFormatted: {
+      value: durationFormatted,
+      unit: 'min:s',
+      status: durationFormatted !== null ? 'extracted' : 'not_found',
+      page: durationPage,
+      rawText: durationFormatted
+    },
     exang: {
       value: exang,
       unit: '',
-      status: exang !== null ? 'extracted' : 'not_found'
+      status: exang !== null ? 'extracted' : 'not_found',
+      page: exangPage,
+      rawText: exangRaw
     },
     oldpeak: {
       value: oldpeak,
       unit: 'mm',
-      status: oldpeak !== null ? 'extracted' : 'not_found'
+      status: oldpeak !== null ? 'extracted' : 'not_found',
+      page: oldpeakPage,
+      rawText: oldpeakRaw
     },
     slope: {
       value: slope,
       unit: '',
-      status: slope !== null ? 'extracted' : 'not_found'
+      status: slope !== null ? 'extracted' : 'not_found',
+      page: slopePage,
+      rawText: slopeRaw
     },
     restecg: {
       value: restecg,
       unit: '',
-      status: restecg !== null ? 'extracted' : 'not_found'
+      status: restecg !== null ? 'extracted' : 'not_found',
+      page: restecgPage,
+      rawText: restecgRaw
     },
     protocol: {
       value: protocol,
       unit: '',
-      status: protocol !== null ? 'extracted' : 'not_found'
+      status: protocol !== null ? 'extracted' : 'not_found',
+      page: protocolPage,
+      rawText: protocolRaw
     },
     conclusion: {
-      value: conclusion,
+      value: reportedConclusion,
       unit: '',
-      status: conclusion !== null ? 'extracted' : 'not_found'
+      status: reportedConclusion !== null ? 'extracted' : 'not_found',
+      page: conclusionPage
+    },
+    tmtResult: {
+      value: tmtResult,
+      unit: '',
+      status: tmtResult !== null ? 'extracted' : 'not_found',
+      page: conclusionPage
     }
   };
 
@@ -390,11 +696,38 @@ function parseTmtText(text) {
     fields.oldpeak,
     fields.slope,
     fields.restecg,
+    fields.protocol,
     fields.conclusion
   ];
 
-  const extractedCount = coreFieldsList.filter(f => f.status === 'extracted').length;
+  const fieldSummaryDefs = [
+    { key: 'protocol', label: 'Exercise Protocol' },
+    { key: 'durationMinutes', label: 'Exercise Duration' },
+    { key: 'mets', label: 'Workload Achieved (METs)' },
+    { key: 'restingHR', label: 'Resting Heart Rate' },
+    { key: 'thalach', label: 'Peak Heart Rate (thalach)' },
+    { key: 'restingBP', label: 'Resting Blood Pressure' },
+    { key: 'peakBP', label: 'Peak Exercise BP' },
+    { key: 'exang', label: 'Exercise-Induced Angina' },
+    { key: 'oldpeak', label: 'ST Depression (oldpeak)' },
+    { key: 'slope', label: 'Peak ST Segment Slope' },
+    { key: 'restecg', label: 'Resting ECG Finding' },
+    { key: 'conclusion', label: 'Reported Conclusion' }
+  ];
 
+  const extractedFieldsSummary = [];
+  const missingFieldsSummary = [];
+
+  for (const def of fieldSummaryDefs) {
+    if (fields[def.key] && fields[def.key].status === 'extracted') {
+      const pageInfo = fields[def.key].page ? ` (p. ${fields[def.key].page})` : '';
+      extractedFieldsSummary.push(`${def.label}${pageInfo}`);
+    } else {
+      missingFieldsSummary.push(def.label);
+    }
+  }
+
+  const extractedCount = coreFieldsList.filter(f => f.status === 'extracted').length;
   const warnings = [];
   let extractionStatus = 'empty';
 
@@ -412,17 +745,34 @@ function parseTmtText(text) {
     extractionStatus = 'success';
   }
 
+  const clinicalExtraction = {
+    status: extractionStatus,
+    extractedCount: extractedFieldsSummary.length,
+    unreportedCount: missingFieldsSummary.length,
+    statusText: extractedCount >= 8
+      ? `${extractedFieldsSummary.length} Extracted · ${missingFieldsSummary.length} Clinically Unreported`
+      : `${extractedFieldsSummary.length} Extracted · ${missingFieldsSummary.length} Missing`
+  };
+
   return {
     extractionStatus,
+    isMismatch: false,
+    detectedType: null,
     fields,
-    reportedConclusion: conclusion,
-    summary: conclusion,
+    durationFormatted,
+    clinicalExtraction,
+    tmtResult,
+    reportedConclusion,
+    reportedDts,
+    summary: reportedConclusion,
+    extractedFieldsSummary,
+    missingFieldsSummary,
     warnings
   };
 }
 
 function getEmptyFields() {
-  const notFound = (unit = '') => ({ value: null, unit, status: 'not_found' });
+  const notFound = (unit = '') => ({ value: null, unit, status: 'not_found', page: null, rawText: null });
   const durField = notFound('minutes');
   const hrField = notFound('bpm');
 
@@ -430,6 +780,8 @@ function getEmptyFields() {
     thalach: hrField,
     restingHr: hrField,
     restingHR: hrField,
+    restingBP: notFound('mmHg'),
+    peakBP: notFound('mmHg'),
     targetHrPercent: notFound('%'),
     mets: notFound('METs'),
     exerciseDurationMinutes: durField,
@@ -439,7 +791,8 @@ function getEmptyFields() {
     slope: notFound(''),
     restecg: notFound(''),
     protocol: notFound(''),
-    conclusion: notFound('')
+    conclusion: notFound(''),
+    tmtResult: notFound('')
   };
 }
 
@@ -488,11 +841,10 @@ async function analyzeTmt(tmtInput = {}) {
     : (tmtInput.exerciseDurationMinutes != null && tmtInput.exerciseDurationMinutes !== '' ? Number(tmtInput.exerciseDurationMinutes) : null);
 
   // Clinical Duke Treadmill Score (independent of Framingham inputs)
-  const rawDukeScore = computeDukeScore(
-    duration,
-    oldpeak,
-    exang
-  );
+  // Only calculated if duration and oldpeak are provided and not explicitly omitted
+  const rawDukeScore = (tmtInput.computeDts !== false && duration != null && oldpeak != null)
+    ? computeDukeScore(duration, oldpeak, exang)
+    : null;
 
   let dukeTreadmillScore = null;
   if (rawDukeScore) {
@@ -538,10 +890,19 @@ async function analyzeTmt(tmtInput = {}) {
   if (mlInference && mlInference.success) {
     mlUciStressModel = {
       predictedClass: mlInference.cad_prediction,
-      label: mlInference.cad_prediction === 1 ? 'Positive for Inducible Ischemia' : 'Negative for Inducible Ischemia',
+      label: mlInference.cad_prediction === 1 ? 'Positive for Obstructive CAD (≥ 50% Stenosis)' : 'Negative for Obstructive CAD (< 50% Stenosis)',
       confidence: mlInference.confidence,
       riskProbability: mlInference.cad_probability,
-      modelName: 'UCI Cleveland Random Forest Classifier (ROC-AUC 0.9545)'
+      modelName: 'UCI Cleveland CAD Random Forest Classifier (5-Fold CV ROC-AUC: 0.857)',
+      featuresEvaluated: mlInference.features_evaluated || {
+        age: tmtInput.age != null ? Number(tmtInput.age) : null,
+        sex: tmtInput.sex != null ? Number(tmtInput.sex) : null,
+        restecg: restecg != null ? restecg : 0,
+        thalach,
+        exang: exang !== null ? exang : 0,
+        oldpeak,
+        slope: slope !== null ? slope : 2
+      }
     };
   }
 
@@ -558,6 +919,10 @@ async function analyzeTmt(tmtInput = {}) {
 
   return {
     status: clinicalStatus,
+    demographics: {
+      age: tmtInput.age != null ? Number(tmtInput.age) : null,
+      sex: tmtInput.sex != null ? Number(tmtInput.sex) : null
+    },
     measurements: {
       thalach,
       restingHR: tmtInput.restingHR != null ? Number(tmtInput.restingHR) : null,
@@ -580,5 +945,6 @@ async function analyzeTmt(tmtInput = {}) {
 module.exports = {
   parseTmtText,
   analyzeTmt,
-  computeDukeScore
+  computeDukeScore,
+  detectDocumentMismatch
 };

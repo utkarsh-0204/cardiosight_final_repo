@@ -64,13 +64,11 @@ body {
   line-height: var(--leading-normal);
   color: var(--text-primary);
   background-color: var(--background);
-  background-image: var(--gradient-mesh);
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -416,8 +414,14 @@ img {
   width: 100%;
 }
 
-.mat-mdc-form-field-subscript-wrapper {
+.mat-mdc-form-field:not(.mat-form-field-invalid):not(.with-hint) .mat-mdc-form-field-subscript-wrapper {
   display: none;
+}
+
+.mat-mdc-form-field.mat-form-field-invalid .mat-mdc-form-field-subscript-wrapper {
+  display: block;
+  padding-top: 2px;
+  font-size: 12px;
 }
 
 .mat-mdc-text-field-wrapper {

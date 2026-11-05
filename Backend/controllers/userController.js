@@ -19,6 +19,15 @@ const getProfile = asyncHandler(async (req, res) => {
 const updateProfile = asyncHandler(async (req, res) => {
   const body = req.body || {};
 
+  // Prevent role elevation / modification
+  if (body.role !== undefined) {
+    const incomingRole = String(body.role).toLowerCase().trim();
+    const currentRole = String(req.user.role || '').toLowerCase().trim();
+    if (incomingRole !== currentRole) {
+      throw new HttpError(403, 'Forbidden: Modifying account role is not permitted.');
+    }
+  }
+
   const fields = {
     firstName: 'first_name',
     lastName: 'last_name',
@@ -49,12 +58,18 @@ const updateProfile = asyncHandler(async (req, res) => {
     }
 
     let value = body[key];
+    if (['heightCm', 'weightKg'].includes(key)) {
+      value = (value === '' || value === null || Number(value) <= 0) ? null : Number(value);
+    }
     if (['allergies', 'medications', 'medicalConditions'].includes(key)) {
       if (!Array.isArray(value)) throw new HttpError(400, `${key} must be an array.`);
       value = JSON.stringify(value);
     }
-    if (key === 'dateOfBirth' && value && !/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
-      throw new HttpError(400, 'Date of birth must be YYYY-MM-DD.');
+    if (key === 'dateOfBirth') {
+      if (value && !/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+        throw new HttpError(400, 'Date of birth must be YYYY-MM-DD.');
+      }
+      value = value ? String(value).slice(0, 10) : null;
     }
 
     assignments.push(`${column} = $${index}`);

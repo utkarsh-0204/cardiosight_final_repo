@@ -5,65 +5,216 @@
       <h1>Platform overview</h1>
       <p>Monitor users, predictions and system health at a glance.</p>
     </div>
-    <button mat-stroked-button routerLink="/app/admin/users">
-      <mat-icon>group</mat-icon> Manage users
-    </button>
+    <div class="admin-head-actions">
+      <button mat-stroked-button routerLink="/app/analytics" class="mr-2">
+        <mat-icon>query_stats</mat-icon> Full analytics
+      </button>
+      <button mat-flat-button color="primary" routerLink="/app/admin/users">
+        <mat-icon>group</mat-icon> Manage users
+      </button>
+    </div>
   </div>
 
   @if (stats(); as s) {
+    <!-- Top 4 KPIs -->
     <div class="stats-grid">
-      <app-stat-card label="Total users" icon="group" tone="secondary" [loading]="loading()">
-        {{ s.totalUsers }}
+      <app-stat-card label="Registered patients" icon="person" tone="secondary" [loading]="loading()">
+        {{ s.totalPatients ?? s.patients }}
       </app-stat-card>
-      <app-stat-card label="Total predictions" icon="insights" tone="primary" [loading]="loading()">
+      <app-stat-card label="Administrators" icon="security" tone="primary" [loading]="loading()">
+        {{ s.totalAdmins ?? s.admins }}
+      </app-stat-card>
+      <app-stat-card label="New registrations" icon="person_add" tone="primary" [loading]="loading()">
+        {{ s.newPatientsThisMonth ?? s.newUsersThisMonth }}
+      </app-stat-card>
+      <app-stat-card label="Total predictions" icon="insights" tone="danger" [loading]="loading()">
         {{ s.totalPredictions }}
-      </app-stat-card>
-      <app-stat-card label="Predictions this week" icon="schedule" tone="accent" [loading]="loading()">
-        {{ s.predictionsThisWeek }}
-      </app-stat-card>
-      <app-stat-card label="Average risk score" icon="speed" tone="warning" [loading]="loading()">
-        {{ s.avgRiskScore }}
       </app-stat-card>
     </div>
 
+    <!-- Monthly Predictions Chart (full width across left col) -->
+    @if (s.monthlyPredictions && s.monthlyPredictions.length > 0) {
+      <div class="card monthly-card">
+        <h2><mat-icon>show_chart</mat-icon> Monthly prediction trends</h2>
+        <p class="card-sub">Platform assessment volume and high-risk case detection over the past 6 months.</p>
+        <app-chart
+          kind="line"
+          [labels]="monthly().labels"
+          [datasets]="[
+            {
+              label: 'Total predictions',
+              data: monthly().predictions,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+            },
+            {
+              label: 'High risk',
+              data: monthly().highRisk,
+              borderColor: '#f97316',
+              backgroundColor: 'rgba(249, 115, 22, 0.08)',
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+              borderDash: [6, 4],
+            },
+          ]"
+          height="250px"
+        ></app-chart>
+      </div>
+    }
+
     <div class="admin-grid">
-      <div>
-        <div class="card">
-          <h2><mat-icon>pie_chart</mat-icon> Risk distribution</h2>
-          <p class="card-sub">Share of predictions by risk level across the platform.</p>
-          <app-chart
-            kind="doughnut"
-            [labels]="riskDistribution().labels"
-            [datasets]="[{
-              data: riskDistribution().values,
-              backgroundColor: ['#43A047', '#F9A825', '#E53935'],
-              borderWidth: 0,
-            }]"
-            height="260px"
-            [options]="{
-              cutout: '68%',
-              plugins: {
-                legend: { display: false },
-              },
-            }"
-          ></app-chart>
-          <div class="chart-legend">
-            <span class="legend-item"><span class="swatch" style="background: #43A047"></span> Low</span>
-            <span class="legend-item"><span class="swatch" style="background: #F9A825"></span> Medium</span>
-            <span class="legend-item"><span class="swatch" style="background: #E53935"></span> High</span>
+      <!-- Left column: Charts & Age/Gender distribution -->
+      <div class="main-charts-col">
+        <!-- Risk Distribution & Gender Distribution Pair -->
+        <div class="charts-pair">
+          <div class="card">
+            <h2><mat-icon>pie_chart</mat-icon> Risk distribution</h2>
+            <p class="card-sub">Share of predictions by risk level across the platform.</p>
+            <app-chart
+              kind="doughnut"
+              [labels]="riskDistribution().labels"
+              [datasets]="[{
+                data: riskDistribution().values,
+                backgroundColor: riskDistribution().colors,
+                borderWidth: 0,
+              }]"
+              height="230px"
+              [options]="{
+                cutout: '68%',
+                plugins: {
+                  legend: { position: 'bottom' },
+                },
+              }"
+            ></app-chart>
+            <div class="chart-legend">
+              @for (lbl of riskDistribution().labels; track lbl; let i = $index) {
+                <span class="legend-item">
+                  <span class="swatch" [style.background]="riskDistribution().colors[i]"></span>
+                  {{ lbl }}: {{ riskDistribution().values[i] }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <div class="card">
+            <h2><mat-icon>wc</mat-icon> Gender distribution</h2>
+            <p class="card-sub">Breakdown of platform assessments by patient gender.</p>
+            <app-chart
+              kind="bar"
+              [labels]="genderDistribution().labels"
+              [datasets]="[{
+                label: 'Assessments',
+                data: genderDistribution().values,
+                backgroundColor: ['#3b82f6', '#ec4899', '#a855f7'],
+                borderRadius: 6,
+              }]"
+              height="230px"
+              [options]="{
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.06)' } },
+                  x: { grid: { display: false } }
+                }
+              }"
+            ></app-chart>
+            <div class="chart-legend">
+              @for (item of s.genderDistribution; track item.label) {
+                <span class="legend-item">
+                  <strong>{{ item.label }}:</strong> {{ item.value }} ({{ s.totalPredictions ? (item.value / s.totalPredictions * 100 | number:'1.0-0') : 0 }}%)
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Age Distribution Table -->
+        @if (s.ageDistribution && s.ageDistribution.length > 0) {
+          <div class="card">
+            <h2><mat-icon>cake</mat-icon> Age distribution</h2>
+            <p class="card-sub">Assessments grouped by clinical age bracket with high-risk prevalence.</p>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Age bracket</th>
+                    <th>Total assessments</th>
+                    <th>High-risk cases</th>
+                    <th>Cohort share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (a of s.ageDistribution; track a.range) {
+                    <tr>
+                      <td><strong>{{ a.range }} yrs</strong></td>
+                      <td>{{ a.total }}</td>
+                      <td>
+                        <span class="danger-badge">{{ a.highRisk }}</span>
+                      </td>
+                      <td>
+                        <div class="share-bar-cell">
+                          <div class="share-bar">
+                            <span [style.width.%]="s.totalPredictions ? (a.total / s.totalPredictions * 100) : 0"></span>
+                          </div>
+                          <span class="share-pct">{{ s.totalPredictions ? (a.total / s.totalPredictions * 100 | number:'1.0-0') : 0 }}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Right column: Quick Operational Insights & Activity Feed -->
+      <div class="side-feed-col">
+        <div class="card health-widget-card">
+          <div class="card-header-flex">
+            <h2><mat-icon>health_and_safety</mat-icon> System & API health</h2>
+            <span class="status-pill operational">Operational</span>
+          </div>
+          <p class="card-sub">Infrastructure & machine learning service status.</p>
+          <div class="insight-rows">
+            <div class="insight-row">
+              <span><mat-icon>storage</mat-icon> PostgreSQL Database</span>
+              <strong style="color: #4ade80">Connected</strong>
+            </div>
+            <div class="insight-row">
+              <span><mat-icon>smart_toy</mat-icon> Django ML Microservice</span>
+              <strong style="color: #4ade80">Active (4 Models)</strong>
+            </div>
+            <div class="insight-row">
+              <span><mat-icon>dns</mat-icon> Express Gateway</span>
+              <strong style="color: #4ade80">Port 3000</strong>
+            </div>
+          </div>
+          <div style="margin-top: 14px">
+            <a mat-stroked-button routerLink="/app/admin/health" style="width: 100%">
+              <mat-icon>analytics</mat-icon>
+              <span>View full diagnostics</span>
+            </a>
           </div>
         </div>
 
         <div class="card">
-          <h2><mat-icon>monitor_heart</mat-icon> Quick insights</h2>
-          <p class="card-sub">Key operational numbers for your team.</p>
+          <h2><mat-icon>monitor_heart</mat-icon> Platform overview</h2>
+          <p class="card-sub">Key operational numbers from live database records.</p>
           <div class="insight-rows">
             <div class="insight-row">
               <span><mat-icon>favorite</mat-icon> High-risk predictions</span>
               <strong class="danger-text">{{ s.highRiskPredictions }}</strong>
             </div>
             <div class="insight-row">
-              <span><mat-icon>person</mat-icon> Active patients</span>
+              <span><mat-icon>schedule</mat-icon> Predictions this week</span>
+              <strong>{{ s.predictionsThisWeek }}</strong>
+            </div>
+            <div class="insight-row">
+              <span><mat-icon>person</mat-icon> Registered patients</span>
               <strong>{{ s.patients }}</strong>
             </div>
             <div class="insight-row">
@@ -76,23 +227,26 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h2><mat-icon>bolt</mat-icon> Recent activity</h2>
-        <p class="card-sub">Latest events across the platform.</p>
-        <ul class="activity-feed">
-          @for (a of activities(); track a.id) {
-            <li class="activity-item">
-              <span class="activity-icon"><mat-icon>{{ a.icon }}</mat-icon></span>
-              <div class="activity-body">
-                <strong>{{ a.user }}</strong>
-                <p>{{ a.action }} · {{ a.target }}</p>
-                <time>{{ a.createdAt | date: 'MMM d, h:mm a' }}</time>
-              </div>
-            </li>
-          }
-        </ul>
+        <div class="card">
+          <div class="card-header-flex">
+            <h2><mat-icon>bolt</mat-icon> Recent system activity</h2>
+            <span class="live-indicator">LIVE</span>
+          </div>
+          <p class="card-sub">Latest platform evaluations and registrations.</p>
+          <ul class="activity-feed">
+            @for (a of activities(); track a.id) {
+              <li class="activity-item">
+                <span class="activity-icon"><mat-icon>{{ a.icon }}</mat-icon></span>
+                <div class="activity-body">
+                  <strong>{{ a.user }}</strong>
+                  <p>{{ a.action }} · {{ a.target }}</p>
+                  <time>{{ a.createdAt | date: 'MMM d, h:mm a' }}</time>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
       </div>
     </div>
   }

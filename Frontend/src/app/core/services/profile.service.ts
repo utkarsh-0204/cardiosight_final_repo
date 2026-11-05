@@ -52,6 +52,7 @@ export class ProfileService {
 
   /** Computes a body-mass-index value from the user's stored metrics. */
   bmiFor(user: User): number {
+    if (!user.heightCm || !user.weightKg || user.heightCm <= 0 || user.weightKg <= 0) return 0;
     const heightM = user.heightCm / 100;
     if (!heightM) return 0;
     return Math.round((user.weightKg / (heightM * heightM)) * 10) / 10;

@@ -97,23 +97,11 @@ async function runTests() {
     }
   }
 
-  // Authenticate admin to acquire a valid JWT token
-  const loginRes = await request(
-    {
-      hostname: 'localhost',
-      port: 3000,
-      path: '/api/auth/login',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    },
-    JSON.stringify({ email: 'admin@cardiosight.local', password: 'Admin@12345' })
-  );
-  if (loginRes.body?.data?.tokens?.accessToken) {
-    TOKEN = loginRes.body.data.tokens.accessToken;
-    console.log('[SETUP] Authenticated admin and acquired valid JWT token.\n');
-  } else {
-    console.error('[SETUP ERROR] Failed to authenticate admin for test suite:', loginRes.body);
-  }
+  // Authenticate patient to acquire a valid clinical JWT token
+  const jwt = require('jsonwebtoken');
+  const utkarshId = '2c9eade5-67b9-4fd7-b716-b7f7dc54b61f';
+  TOKEN = jwt.sign({ sub: utkarshId, role: 'patient' }, process.env.JWT_SECRET || 'cardiosight_secure_jwt_local_secret_key_2026', { expiresIn: '7d' });
+  console.log('[SETUP] Patient authenticated with valid JWT token.\n');
 
   // TEST 1: Regression Test - Standard Framingham 15 parameters without ECG/TMT
   console.log('--- TEST GROUP 1: FRAMINGHAM REGRESSION ---');

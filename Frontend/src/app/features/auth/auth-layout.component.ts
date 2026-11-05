@@ -13,7 +13,6 @@ import { InViewDirective } from '../../../shared/directives/in-view.directive';
   template: `
     <div class="auth-layout">
       <aside class="auth-brand-panel">
-        <div class="ab-glow"></div>
         <a class="l-brand" routerLink="/landing">
           <span class="l-brand-mark">
             <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -88,23 +87,6 @@ import { InViewDirective } from '../../../shared/directives/in-view.directive';
         @media (max-width: 1020px) {
           display: none;
         }
-      }
-      .ab-glow {
-        position: absolute;
-        top: -140px;
-        right: -140px;
-        width: 480px;
-        height: 480px;
-        border-radius: 50%;
-        background: radial-gradient(closest-side, rgba(229, 57, 53, 0.4), transparent);
-        filter: blur(30px);
-      }
-      .ab-glow::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(closest-side, rgba(21, 101, 192, 0.3), transparent);
-        transform: translate(-140px, 140px);
       }
       .l-brand {
         display: flex;

@@ -12,12 +12,18 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const router = inject(Router);
   const toast = inject(ToastService);
 
+  const hadToken = Boolean(auth.accessToken());
+
   return auth.validateSession().pipe(
     map((isValid) => {
       if (isValid) {
         return true;
       }
-      toast.warning('Session expired', 'Please log in to continue.');
+      // Only display session expired warning if the user previously possessed an active token
+      // that is no longer valid. Never display this to unauthenticated visitors or clean logouts.
+      if (hadToken) {
+        toast.warning('Session expired', 'Your session has ended. Please sign in again.');
+      }
       return router.createUrlTree(['/auth/login'], {
         queryParams: { returnUrl: state.url },
       });

@@ -4,6 +4,10 @@
 // =============================================================================
 
 const pdfParse = require('pdf-parse');
+const { execFileSync } = require('child_process');
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB limit
 const PDF_MAGIC_BYTES = Buffer.from([0x25, 0x50, 0x44, 0x46]); // %PDF
@@ -64,8 +68,32 @@ async function parsePdfData(buffer) {
 }
 
 /**
+ * Executes high-accuracy OCR on image-based / scanned PDFs using the native Vision engine.
+ * @param {Buffer} buffer
+ */
+function runOcrOnPdf(buffer) {
+  const ocrBin = path.join(__dirname, '..', 'bin', 'ocr_tool');
+  if (!fs.existsSync(ocrBin)) return null;
+
+  const tmpPath = path.join(os.tmpdir(), `cardiosight_ocr_${Date.now()}_${Math.random().toString(36).slice(2)}.pdf`);
+  try {
+    fs.writeFileSync(tmpPath, buffer);
+    const text = execFileSync(ocrBin, [tmpPath], { timeout: 15000, encoding: 'utf8' });
+    return text ? text.trim() : null;
+  } catch (err) {
+    console.warn('[OCR] Extraction note:', err.message);
+    return null;
+  } finally {
+    try {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    } catch (_) {}
+  }
+}
+
+/**
  * Extracts text from a validated PDF buffer.
  * Detects whether the PDF contains digital text or is a scanned/raster document.
+ * Applies OCR automatically if document is scanned or contains minimal digital text.
  * @param {Buffer} buffer
  * @param {string} originalname
  */
@@ -80,19 +108,43 @@ async function extractTextFromPdf(buffer, originalname = 'report.pdf') {
 
     // A document with very little text (< 40 chars) across multiple pages is typically scanned/image-only
     const isScanned = rawText.replace(/\s+/g, '').length < 40;
+    // Check if multi-page document contains scanned pages (e.g. low text density per page)
+    const isMultiPageWithScans = numPages > 1 && (rawText.replace(/\s+/g, '').length / numPages) < 400;
+    let text = rawText;
+    let ocrApplied = false;
+
+    if (isScanned || isMultiPageWithScans) {
+      const ocrResult = runOcrOnPdf(buffer);
+      if (ocrResult && ocrResult.length >= 20) {
+        text = ocrResult;
+        ocrApplied = true;
+      }
+    }
+
+    const warnings = [];
+    let ocrNotice = null;
+    if (isScanned || isMultiPageWithScans) {
+      if (ocrApplied) {
+        ocrNotice = 'Scanned document detected. OCR was applied successfully. Please verify extracted clinical values.';
+      } else {
+        warnings.push(
+          'Document appears to be a scanned or image-based PDF. Automated text extraction may be limited. Please verify or manually enter clinical values.'
+        );
+      }
+    }
 
     return {
       success: true,
       filename: originalname,
       numPages,
       pageCount: numPages,
-      textLength: rawText.length,
-      isScanned,
-      text: rawText,
-      rawText,
-      warnings: isScanned
-        ? ['Document appears to be a scanned or image-based PDF. Automated text extraction may be limited. Please verify or manually enter clinical values.']
-        : []
+      textLength: text.length,
+      isScanned: isScanned || isMultiPageWithScans,
+      ocrApplied,
+      ocrNotice,
+      text: text,
+      rawText: text,
+      warnings
     };
   } catch (err) {
     if (err.name === 'PasswordException' || /password/i.test(err.message)) {

@@ -47,7 +47,8 @@ def predict(request):
         )
 
     try:
-        artifact = load_model()
+        model_version_requested = payload.get("model_version")
+        artifact = load_model(version=model_version_requested)
         model = artifact["model"]
 
         X = X[artifact["feature_names"]]
@@ -63,6 +64,8 @@ def predict(request):
             "probability": round(probability * 100, 2),
             "risk_score": round(probability * 100, 2),
             "confidence": confidence,
+            "model_version": artifact.get("version", "v1_original"),
+            "artifact_used": artifact.get("artifact_file", "model.joblib"),
             "message": (
                 "Higher estimated 10-year CHD risk"
                 if prediction == 1
@@ -118,16 +121,17 @@ def predict_tmt(request):
             "cad_prediction": pred,
             "cad_probability": round(prob * 100, 2),
             "confidence": conf,
-            "risk_category": "positive_ischemia" if pred == 1 else "negative_ischemia",
+            "risk_category": "cad_present" if pred == 1 else "cad_absent",
+            "features_evaluated": row,
             "model_metadata": {
                 "dataset": artifact.get("dataset"),
                 "target": artifact.get("target"),
                 "held_out_metrics": artifact.get("metrics")
             },
             "message": (
-                "Exercise stress test findings indicate positive probability of inducible myocardial ischemia."
+                "Exercise parameters indicate elevated likelihood of angiographic coronary artery disease (CAD >= 50% stenosis)."
                 if pred == 1 else
-                "Exercise stress test findings do not demonstrate significant evidence of inducible ischemia."
+                "Exercise parameters do not indicate significant likelihood of angiographic coronary artery disease (CAD < 50% stenosis)."
             )
         })
     except Exception as exc:

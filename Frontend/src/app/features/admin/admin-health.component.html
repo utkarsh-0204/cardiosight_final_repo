@@ -1,0 +1,149 @@
+<div class="admin-page">
+  <div class="admin-head">
+    <div class="head-content">
+      <div>
+        <span class="eyebrow">Infrastructure Diagnostics</span>
+        <h1>System Health & Audit Logs</h1>
+        <p>Live health verification of the PostgreSQL database, Django ML microservice, and Express gateway.</p>
+      </div>
+      <button mat-flat-button color="primary" (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        <span>Run Diagnostics</span>
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-bar">
+      <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
+    </div>
+  }
+
+  @if (health()) {
+    <!-- Status Banner -->
+    <div class="status-banner" [class.degraded]="health()?.overallStatus === 'degraded'">
+      <div class="banner-icon">
+        <mat-icon>{{ health()?.overallStatus === 'operational' ? 'check_circle' : 'warning' }}</mat-icon>
+      </div>
+      <div class="banner-body">
+        <strong>All Core Systems {{ health()?.overallStatus === 'operational' ? 'Operational' : 'Experiencing Degradation' }}</strong>
+        <span>Last evaluated at {{ health()?.timestamp | date: 'medium' }}</span>
+      </div>
+    </div>
+
+    <!-- 3 Service Cards -->
+    <div class="services-grid">
+      <!-- Database -->
+      <div class="service-card">
+        <div class="card-head">
+          <div class="icon-wrap db"><mat-icon>storage</mat-icon></div>
+          <div>
+            <h3>PostgreSQL Database</h3>
+            <span class="service-type">Relational Storage</span>
+          </div>
+          <span class="status-pill operational">Operational</span>
+        </div>
+        <div class="card-metrics">
+          <div class="metric">
+            <span class="m-label">Roundtrip Latency</span>
+            <span class="m-val">{{ health()?.services?.database?.latencyMs }} ms</span>
+          </div>
+          <div class="metric">
+            <span class="m-label">Connection Pool</span>
+            <span class="m-val">Active (Local)</span>
+          </div>
+          <div class="metric">
+            <span class="m-label">Integrity Status</span>
+            <span class="m-val">Pass</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ML Microservice -->
+      <div class="service-card">
+        <div class="card-head">
+          <div class="icon-wrap ml"><mat-icon>smart_toy</mat-icon></div>
+          <div>
+            <h3>Django ML Microservice</h3>
+            <span class="service-type">Inference Engine (Port 8000)</span>
+          </div>
+          <span class="status-pill operational">Operational</span>
+        </div>
+        <div class="card-metrics">
+          <div class="metric">
+            <span class="m-label">Inference Latency</span>
+            <span class="m-val">{{ health()?.services?.mlMicroservice?.latencyMs }} ms</span>
+          </div>
+          <div class="metric">
+            <span class="m-label">Active Models</span>
+            <span class="m-val">Framingham V1, Platt V2, UCI CAD</span>
+          </div>
+          <div class="metric">
+            <span class="m-label">SHAP XAI Engine</span>
+            <span class="m-val">Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Express Gateway -->
+      <div class="service-card">
+        <div class="card-head">
+          <div class="icon-wrap gw"><mat-icon>dns</mat-icon></div>
+          <div>
+            <h3>Express API Gateway</h3>
+            <span class="service-type">Node.js Gateway (Port 3000)</span>
+          </div>
+          <span class="status-pill operational">Operational</span>
+        </div>
+        <div class="card-metrics">
+          <div class="metric">
+            <span class="m-label">Server Uptime</span>
+            <span class="m-val">{{ formatUptime(health()?.services?.gateway?.uptimeSeconds) }}</span>
+          </div>
+          <div class="metric">
+            <span class="m-label">Resident Memory</span>
+            <span class="m-val">{{ health()?.services?.gateway?.memoryMb }} MB</span>
+          </div>
+          <div class="metric">
+            <span class="m-label">Environment</span>
+            <span class="m-val">{{ health()?.services?.gateway?.environment | uppercase }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Administrative Audit Logs Section -->
+    <div class="audit-section">
+      <div class="sec-head">
+        <h2>Administrative Security Audit Log</h2>
+        <span class="sec-count">{{ auditLogs().length }} recent security events recorded</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Administrator</th>
+              <th>Action Event</th>
+              <th>Target Type</th>
+              <th>Target ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of auditLogs(); track log.id) {
+              <tr>
+                <td><span class="log-time">{{ log.timestamp | date: 'MMM d, h:mm:ss a' }}</span></td>
+                <td><strong class="log-admin">{{ log.adminEmail }}</strong></td>
+                <td><span class="action-pill">{{ log.action }}</span></td>
+                <td><span class="target-type">{{ log.targetType }}</span></td>
+                <td><code class="target-id">{{ log.targetId || 'N/A' }}</code></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>
+

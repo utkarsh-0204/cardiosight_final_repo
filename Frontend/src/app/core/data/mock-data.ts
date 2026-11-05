@@ -72,8 +72,8 @@ function calculateMockRisk(input: PredictionInput): number {
 }
 
 function getRiskLevel(score: number): RiskLevel {
-  if (score >= 60) return "high";
-  if (score >= 35) return "medium";
+  if (score >= 20) return "high";
+  if (score >= 10) return "medium";
   return "low";
 }
 

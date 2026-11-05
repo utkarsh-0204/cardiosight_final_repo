@@ -30,7 +30,7 @@ export class AuthService {
   readonly currentUser = this.user.asReadonly();
   readonly accessToken = this.token.asReadonly();
   readonly isAuthenticated = computed(() => this.user() !== null);
-  readonly isAdmin = computed(() => this.user()?.role === 'admin');
+  readonly isAdmin = computed(() => String(this.user()?.role || '').toLowerCase().trim() === 'admin');
   readonly fullName = computed(() => {
     const u = this.user();
     return u ? `${u.firstName} ${u.lastName}` : '';
@@ -124,7 +124,6 @@ export class AuthService {
 
     const token = this.token();
     if (!token) {
-      this.logout();
       return of(false);
     }
 

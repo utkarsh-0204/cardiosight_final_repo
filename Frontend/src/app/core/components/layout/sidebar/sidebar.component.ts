@@ -13,62 +13,62 @@ interface NavItem {
   icon: string;
   route: string;
   exact?: boolean;
-  adminOnly?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
+const PATIENT_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'dashboard', route: '/app/dashboard', exact: true },
   { label: 'New Prediction', icon: 'monitor_heart', route: '/app/predict' },
-  { label: 'History', icon: 'history', route: '/app/history' },
-  { label: 'Analytics', icon: 'query_stats', route: '/app/analytics' },
-  { label: 'Profile', icon: 'manage_accounts', route: '/app/profile' },
+  { label: 'My History', icon: 'history', route: '/app/history' },
+  { label: 'My Profile', icon: 'manage_accounts', route: '/app/profile' },
   { label: 'About Project', icon: 'info', route: '/app/about' },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [
-  { label: 'Admin Panel', icon: 'admin_panel_settings', route: '/app/admin', exact: true, adminOnly: true },
-  { label: 'Users', icon: 'group', route: '/app/admin/users', adminOnly: true },
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  { label: 'Admin Dashboard', icon: 'admin_panel_settings', route: '/app/admin', exact: true },
+  { label: 'User Management', icon: 'group', route: '/app/admin/users' },
+  { label: 'Prediction Monitoring', icon: 'insights', route: '/app/admin/predictions' },
+  { label: 'Analytics', icon: 'query_stats', route: '/app/analytics' },
+  { label: 'System Health', icon: 'health_and_safety', route: '/app/admin/health' },
+  { label: 'About Project', icon: 'info', route: '/app/about' },
+  { label: 'Admin Profile', icon: 'manage_accounts', route: '/app/profile' },
 ];
 
 @Component({
   selector: 'app-sidebar',
   template: `
     <div class="sidebar" [class.collapsed]="collapsed()">
-      <div class="sidebar-glow glow-a" aria-hidden="true"></div>
-      <div class="sidebar-glow glow-b" aria-hidden="true"></div>
-
       <a class="brand" routerLink="/landing">
         <span class="brand-mark">
-          <span class="brand-mark-halo" aria-hidden="true"></span>
           <svg viewBox="0 0 32 32" aria-hidden="true">
-            <path d="M3 17h5l2.5-6 4 10 3-7 2 3h5.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="27" cy="6" r="3" fill="#43A047" stroke="#fff" stroke-width="1.4"/>
+            <path d="M3 17h5l2.5-6 4 10 3-7 2 3h5.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="27" cy="6" r="2.8" fill="#F06464"/>
           </svg>
         </span>
         <span class="brand-name">Cardio<em>Sight</em></span>
       </a>
 
       <nav class="nav">
-        <p class="nav-section" [class.hidden]="collapsed()">Main</p>
-        @for (item of navItems; track item.route) {
-          <a
-            class="nav-link"
-            [routerLink]="item.route"
-            [class.active]="isActive(item.route, item.exact)"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: !!item.exact }"
-          >
-            <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-            <span class="nav-label">{{ item.label }}</span>
-          </a>
-        }
-
         @if (isAdmin()) {
           <p class="nav-section" [class.hidden]="collapsed()">Administration</p>
-          @for (item of adminItems; track item.route) {
+          @for (item of adminNavItems; track item.route) {
             <a
               class="nav-link"
               [routerLink]="item.route"
+              [class.active]="isActive(item.route, item.exact)"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            >
+              <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+              <span class="nav-label">{{ item.label }}</span>
+            </a>
+          }
+        } @else {
+          <p class="nav-section" [class.hidden]="collapsed()">Patient Portal</p>
+          @for (item of patientNavItems; track item.route) {
+            <a
+              class="nav-link"
+              [routerLink]="item.route"
+              [class.active]="isActive(item.route, item.exact)"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: !!item.exact }"
             >
@@ -111,94 +111,53 @@ const ADMIN_ITEMS: NavItem[] = [
         height: 100%;
         display: flex;
         flex-direction: column;
-        background:
-          radial-gradient(480px 320px at 0% 0%, rgba(229, 57, 53, 0.14), transparent 60%),
-          radial-gradient(420px 300px at 110% 100%, rgba(21, 101, 192, 0.16), transparent 60%),
-          linear-gradient(180deg, #141d30 0%, #0d1322 100%);
+        background: #0B1020;
+        border-right: 1px solid rgba(255, 255, 255, 0.07);
         color: var(--sidebar-text);
-        padding: 20px 16px;
+        padding: 18px 14px;
         transition: width var(--ease);
         width: var(--sidebar-width);
         overflow: hidden;
-        isolation: isolate;
       }
       .sidebar.collapsed {
         width: var(--sidebar-width-collapsed);
       }
-      .sidebar-glow {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(60px);
-        z-index: 0;
-        pointer-events: none;
-        animation: aurora-shift 12s ease-in-out infinite;
-      }
-      .glow-a {
-        width: 260px;
-        height: 260px;
-        background: rgba(229, 57, 53, 0.22);
-        top: -90px;
-        right: -90px;
-      }
-      .glow-b {
-        width: 220px;
-        height: 220px;
-        background: rgba(21, 101, 192, 0.2);
-        bottom: -60px;
-        left: -70px;
-        animation-delay: -6s;
-      }
       .brand {
         position: relative;
-        z-index: 1;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         padding: 6px 8px 20px;
         color: #fff;
-        min-height: 62px;
+        min-height: 54px;
+        text-decoration: none;
       }
       .brand-mark {
-        position: relative;
-        width: 44px;
-        height: 44px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #ff6f61 0%, #e53935 45%, #8e2f2c 100%);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #161F33;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        box-shadow: 0 10px 24px -6px rgba(229, 57, 53, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-        overflow: visible;
-      }
-      .brand-mark-halo {
-        position: absolute;
-        inset: -4px;
-        border-radius: 18px;
-        background: radial-gradient(circle at 30% 20%, rgba(255, 138, 128, 0.6), rgba(229, 57, 53, 0) 60%);
-        filter: blur(6px);
-        opacity: 0.7;
-        animation: heartbeat 3.2s ease-in-out infinite;
-        z-index: -1;
       }
       .brand-mark svg {
-        width: 26px;
-        height: 26px;
+        width: 20px;
+        height: 20px;
       }
       .brand-name {
-        font-family: var(--font-display);
-        font-size: 19px;
-        font-weight: 700;
+        font-family: var(--font-sans);
+        font-size: 16px;
+        font-weight: 600;
         letter-spacing: -0.01em;
+        color: #F8FAFC;
         white-space: nowrap;
       }
       .brand-name em {
         font-style: normal;
-        background: var(--gradient-text);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        color: transparent;
+        color: #F06464;
       }
       .nav {
         position: relative;
@@ -382,8 +341,8 @@ export class SidebarComponent {
 
   readonly collapsed = this.ui.sidebarCollapsed;
   readonly isAdmin = this.auth.isAdmin;
-  readonly navItems = NAV_ITEMS;
-  readonly adminItems = ADMIN_ITEMS;
+  readonly patientNavItems = PATIENT_NAV_ITEMS;
+  readonly adminNavItems = ADMIN_NAV_ITEMS;
 
   isActive(route: string, exact?: boolean): boolean {
     const url = this.router.url.split('?')[0];

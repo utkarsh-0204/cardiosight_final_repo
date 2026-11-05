@@ -19,8 +19,8 @@
   How it works
 </a>
 
-<a href="javascript:void(0)" (click)="scrollToSection('testimonials')" class="l-nav-link">
-  Testimonials
+<a href="javascript:void(0)" (click)="scrollToSection('workflow')" class="l-nav-link">
+  Workflow
 </a>
 
 <a href="javascript:void(0)" (click)="scrollToSection('faq')" class="l-nav-link">
@@ -44,7 +44,7 @@
   <div class="l-mobile-nav" *ngIf="isMobileMenuOpen()">
     <a href="#features" (click)="toggleMobileMenu()">Features</a>
     <a href="#how" (click)="toggleMobileMenu()">How it works</a>
-    <a href="#testimonials" (click)="toggleMobileMenu()">Testimonials</a>
+    <a href="#workflow" (click)="toggleMobileMenu()">Workflow</a>
     <a href="#faq" (click)="toggleMobileMenu()">FAQ</a>
     <a routerLink="/auth/login" (click)="toggleMobileMenu()">Sign in</a>
   </div>
@@ -52,116 +52,108 @@
 
 <!-- Hero -->
 <section class="hero">
-  <div class="hero-blob hero-blob-1"></div>
-  <div class="hero-blob hero-blob-2"></div>
-
   <div class="container hero-grid">
     <div class="hero-copy">
-      <span class="hero-badge"><span class="pulse-dot"></span> Powered by ML · Sleep + Clinical Intelligence</span>
+      <span class="hero-eyebrow">CARDIOVASCULAR HEALTH INTELLIGENCE</span>
       <h1 class="hero-title">
-        Predict your <span class="gradient-text">heart disease risk</span> before it's too late.
+        Understand your <span class="coral-highlight">heart health</span>. Make informed decisions.
       </h1>
       <p class="hero-sub">
-        CardioSight combines machine learning with your sleep patterns and clinical
-        parameters to deliver a clear, honest coronary heart disease risk score —
-        plus actionable recommendations to protect your heart.
+        Assess cardiovascular risk through clinical parameters, ECG and TMT analysis, supported by machine learning insights.
       </p>
       <div class="hero-cta">
         <a routerLink="/auth/register" class="btn btn-primary btn-lg">
-          Start free prediction <mat-icon>favorite</mat-icon>
+          Explore CardioSight <span class="btn-arrow">&rarr;</span>
         </a>
         <a routerLink="/auth/login" class="btn btn-outline btn-lg">Sign in</a>
       </div>
-      <div class="hero-trust">
-        <div class="trust-avatars">
-          @for (person of trustPeople; track person) {
-            <app-avatar [name]="person" [size]="36"></app-avatar>
+    </div>
+
+    <div class="hero-visual">
+      <div class="heart-visual-stage">
+        <!-- Subtle ECG pulse ambient line behind the heart -->
+        <svg class="ecg-ambient-svg" viewBox="0 0 540 180" preserveAspectRatio="none" aria-hidden="true">
+          <path class="ecg-base-line" d="M0,90 L160,90 L174,72 L184,106 L194,48 L208,138 L220,24 L234,104 L244,80 L256,90 L540,90" />
+          <path class="ecg-pulse-anim" d="M0,90 L160,90 L174,72 L184,106 L194,48 L208,138 L220,24 L234,104 L244,80 L256,90 L540,90" />
+        </svg>
+
+        <div class="heart-glow-field"></div>
+
+        <div class="heart-image-frame">
+          <img
+            src="heart-3d.png"
+            alt="3D Anatomical Human Heart"
+            class="heart-3d-render"
+            (error)="heartImageFailed.set(true)"
+            [class.is-hidden]="heartImageFailed()"
+          />
+
+          @if (heartImageFailed()) {
+            <div class="heart-fallback-graphic">
+              <svg viewBox="0 0 380 400" fill="none" class="anatomical-fallback-svg">
+                <defs>
+                  <linearGradient id="aortaG" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#FCA5A5" />
+                    <stop offset="100%" stop-color="#DC2626" />
+                  </linearGradient>
+                  <linearGradient id="muscleG" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#E11D48" />
+                    <stop offset="60%" stop-color="#881337" />
+                    <stop offset="100%" stop-color="#4C0519" />
+                  </linearGradient>
+                  <linearGradient id="veinG" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#60A5FA" />
+                    <stop offset="100%" stop-color="#1E3A8A" />
+                  </linearGradient>
+                </defs>
+                <path d="M180,120 C180,60 240,45 255,85 C265,110 260,155 250,185" fill="none" stroke="url(#aortaG)" stroke-width="26" stroke-linecap="round" />
+                <path d="M160,125 C160,95 120,100 105,120 C90,140 105,175 120,195" fill="none" stroke="url(#veinG)" stroke-width="22" stroke-linecap="round" />
+                <path d="M125,165 C95,200 100,260 135,320 C165,370 195,390 205,390 C215,390 250,340 275,285 C295,240 290,190 265,165 C235,140 205,175 185,180 C165,175 145,145 125,165 Z" fill="url(#muscleG)" stroke="rgba(240, 100, 100, 0.4)" stroke-width="2" />
+                <path d="M185,180 Q180,250 200,325 Q205,355 205,385" fill="none" stroke="#FCA5A5" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+                <path d="M185,220 Q150,255 135,285" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+                <path d="M195,265 Q235,295 255,310" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+              </svg>
+            </div>
           }
         </div>
-        <div>
-          <div class="stars">★★★★★</div>
-          <span>Trusted by 9,400+ users and clinicians</span>
-        </div>
       </div>
     </div>
-
-    <div class="hero-visual" appInView (appInView)="statsVisible.set(true)">
-      <div class="hero-card">
-        <div class="hc-head">
-          <span class="hc-title"><mat-icon>monitor_heart</mat-icon> Risk Assessment</span>
-          <span class="hc-live"><span class="live-dot"></span> LIVE</span>
-        </div>
-        <div class="hc-gauge">
-          <svg viewBox="0 0 220 132">
-            <path d="M20 120 A90 90 0 0 1 200 120" fill="none" stroke="#43A047" stroke-width="18" opacity="0.18"/>
-            <path
-              d="M20 120 A90 90 0 0 1 200 120"
-              fill="none"
-              stroke="url(#hg)"
-              stroke-width="13"
-              stroke-linecap="round"
-              [attr.stroke-dasharray]="'283'"
-              [style.stroke-dashoffset.px]="gaugeOffset"
-            />
-            <defs>
-              <linearGradient id="hg" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#43A047"/>
-                <stop offset="0.55" stop-color="#F9A825"/>
-                <stop offset="1" stop-color="#E53935"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <div class="hc-gauge-value">
-            <strong>28</strong>
-            <span>LOW RISK</span>
-          </div>
-        </div>
-        <div class="hc-foot">
-          <div class="hc-stat"><span>Confidence</span><strong>92%</strong></div>
-          <div class="hc-stat"><span>Sleep</span><strong>7.5h</strong></div>
-          <div class="hc-stat"><span>Stress</span><strong>2/5</strong></div>
-        </div>
-      </div>
-
-      <div class="float-card float-card-1">
-        <mat-icon>bedtime</mat-icon>
-        <div><strong>Sleep score</strong><span>Improved 14%</span></div>
-      </div>
-      <div class="float-card float-card-2">
-        <mat-icon>favorite</mat-icon>
-        <div><strong>Heart health</strong><span>Optimal zone</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="container stats-band" appInView (appInView)="statsVisible.set(true)">
-    @for (stat of stats; track stat.label) {
-      <div class="stat">
-        <app-counter [value]="statsVisible() ? stat.value : 0" [suffix]="stat.suffix" [decimals]="stat.decimals"></app-counter>
-        <span>{{ stat.label }}</span>
-      </div>
-    }
   </div>
 </section>
 
-<!-- Features -->
-<section class="section" id="features">
+<!-- Features Section -->
+<section class="section-features" id="features">
   <div class="container">
-    <div class="section-head">
-      <span class="eyebrow">Features</span>
-      <h2 class="section-title">Everything you need to know your heart</h2>
-      <p class="section-subtitle">A complete, clinician-informed toolkit for coronary heart disease screening.</p>
-    </div>
-    <div class="feature-grid stagger">
-      @for (feature of features; track feature.title) {
-        <div class="feature-card">
-          <div class="feature-icon" [style.--f-tone]="feature.tone">
-            <mat-icon>{{ feature.icon }}</mat-icon>
-          </div>
-          <h3>{{ feature.title }}</h3>
-          <p>{{ feature.text }}</p>
+    <div class="features-trio">
+      <div class="feature-trio-card">
+        <div class="ft-icon-box">
+          <mat-icon>monitor_heart</mat-icon>
         </div>
-      }
+        <div class="ft-content">
+          <h3 class="ft-title">Risk Assessment</h3>
+          <p class="ft-desc">Framingham-based cardiovascular risk evaluation.</p>
+        </div>
+      </div>
+
+      <div class="feature-trio-card">
+        <div class="ft-icon-box">
+          <mat-icon>show_chart</mat-icon>
+        </div>
+        <div class="ft-content">
+          <h3 class="ft-title">ECG &amp; TMT Analysis</h3>
+          <p class="ft-desc">Integrated clinical investigation workflows.</p>
+        </div>
+      </div>
+
+      <div class="feature-trio-card">
+        <div class="ft-icon-box">
+          <mat-icon>psychology</mat-icon>
+        </div>
+        <div class="ft-content">
+          <h3 class="ft-title">ML Insights</h3>
+          <p class="ft-desc">Machine learning-based predictions and explanations.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -193,23 +185,23 @@
     <div class="benefits-visual">
       <div class="benefit-card">
         <div class="bc-head">
-          <div class="bc-avatar"><mat-icon>person</mat-icon></div>
-          <div><strong>Aarav's progress</strong><span>Last 6 months</span></div>
-          <span class="bc-trend"><mat-icon>trending_up</mat-icon> -36%</span>
+          <div class="bc-avatar"><mat-icon>insights</mat-icon></div>
+          <div><strong>Longitudinal Risk Tracking</strong><span>Periodic Assessment</span></div>
+          <span class="bc-trend"><mat-icon>trending_down</mat-icon> Clinical Trend</span>
         </div>
         <div class="bc-chart">
           @for (bar of progressBars; track $index) {
             <div class="bc-bar-row">
               <span>{{ barLabel($index) }}</span>
               <div class="bc-bar"><div [style.width.%]="bar"></div></div>
-              <strong>{{ bar }}%</strong>
+              <strong>{{ bar }}</strong>
             </div>
           }
         </div>
       </div>
       <div class="benefit-badge">
         <mat-icon>verified</mat-icon>
-        <div><strong>87% validated accuracy</strong><span>On independent test data</span></div>
+        <div><strong>Evidence-Based Models</strong><span>Validated clinical algorithms</span></div>
       </div>
     </div>
 
@@ -233,27 +225,72 @@
   </div>
 </section>
 
-<!-- Testimonials -->
-<section class="section section-alt" id="testimonials">
+<!-- From Clinical Data to Actionable Insights -->
+<section class="section section-alt workflow-section" id="workflow">
+  <span id="testimonials" style="position: absolute; top: 0;"></span>
   <div class="container">
     <div class="section-head">
-      <span class="eyebrow">Testimonials</span>
-      <h2 class="section-title">Loved by patients & clinicians</h2>
+      <span class="eyebrow">Clinical Workflow</span>
+      <h2 class="section-title">From Clinical Data to Actionable Insights</h2>
+      <p class="section-subtitle">
+        An integrated approach to cardiovascular risk assessment, diagnostic analysis and machine learning.
+      </p>
     </div>
-    <div class="testimonial-grid stagger">
-      @for (t of testimonials; track t.name) {
-        <div class="testimonial-card">
-          <div class="quote-mark">"</div>
-          <p class="quote">{{ t.quote }}</p>
-          <div class="author">
-            <app-avatar [name]="t.name" [color]="t.color" [size]="44"></app-avatar>
-            <div>
-              <strong>{{ t.name }}</strong>
-              <span>{{ t.role }}</span>
-            </div>
+
+    <div class="horizontal-workflow">
+      <!-- Step 01 -->
+      <div class="workflow-step-card">
+        <div class="step-card-head">
+          <span class="step-index-pill">01</span>
+          <div class="step-icon-wrap">
+            <mat-icon>fact_check</mat-icon>
           </div>
         </div>
-      }
+        <h3 class="step-heading">01 — DATA COLLECTION</h3>
+        <p class="step-body-text">
+          Clinical parameters, patient history, ECG, TMT and relevant health indicators.
+        </p>
+      </div>
+
+      <!-- Connector 1 -->
+      <div class="step-link-divider" aria-hidden="true">
+        <div class="divider-line"></div>
+        <mat-icon class="divider-icon">chevron_right</mat-icon>
+      </div>
+
+      <!-- Step 02 -->
+      <div class="workflow-step-card">
+        <div class="step-card-head">
+          <span class="step-index-pill">02</span>
+          <div class="step-icon-wrap">
+            <mat-icon>biotech</mat-icon>
+          </div>
+        </div>
+        <h3 class="step-heading">02 — INTELLIGENT ANALYSIS</h3>
+        <p class="step-body-text">
+          Clinical risk assessment combined with machine learning models and diagnostic analysis.
+        </p>
+      </div>
+
+      <!-- Connector 2 -->
+      <div class="step-link-divider" aria-hidden="true">
+        <div class="divider-line"></div>
+        <mat-icon class="divider-icon">chevron_right</mat-icon>
+      </div>
+
+      <!-- Step 03 -->
+      <div class="workflow-step-card">
+        <div class="step-card-head">
+          <span class="step-index-pill">03</span>
+          <div class="step-icon-wrap">
+            <mat-icon>insights</mat-icon>
+          </div>
+        </div>
+        <h3 class="step-heading">03 — PREDICTION &amp; EXPLANATION</h3>
+        <p class="step-body-text">
+          Cardiovascular risk estimates, model explanations and personalized insights.
+        </p>
+      </div>
     </div>
   </div>
 </section>
@@ -315,13 +352,13 @@
       <a routerLink="/app/dashboard">Dashboard</a>
       <a routerLink="/app/predict">New prediction</a>
       <a routerLink="/app/history">History</a>
-      <a routerLink="/app/analytics">Analytics</a>
+      <a routerLink="/app/profile">Profile</a>
     </div>
     <div class="footer-col">
       <h5>Company</h5>
       <a href="#" (click)="goAbout()">About the project</a>
       <a href="#faq">FAQ</a>
-      <a href="#testimonials">Testimonials</a>
+      <a href="#workflow">Clinical Workflow</a>
     </div>
     <div class="footer-col">
       <h5>Legal</h5>

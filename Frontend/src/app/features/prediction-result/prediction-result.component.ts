@@ -10,8 +10,6 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { Subscription, catchError, of, timeout } from "rxjs";
 
-import { RiskMeterComponent } from "../../shared/components/risk-meter/risk-meter.component";
-import { CircularProgressComponent } from "../../shared/components/circular-progress/circular-progress.component";
 import {
   ChartWidgetComponent,
   type ChartDataset,
@@ -40,8 +38,6 @@ import type {
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    RiskMeterComponent,
-    CircularProgressComponent,
     ChartWidgetComponent,
   ],
 })
@@ -60,6 +56,81 @@ export class PredictionResultComponent implements OnInit, OnDestroy {
   readonly explanation = signal<ExplanationResult | null>(null);
   readonly explanationLoading = signal<boolean>(true);
   readonly explanationError = signal<string | null>(null);
+
+  // Collapsible detailed AI analysis (collapsed by default for clean UX)
+  readonly showTechnicalAnalysis = signal<boolean>(false);
+
+  toggleTechnicalAnalysis(): void {
+    this.showTechnicalAnalysis.update((v) => !v);
+  }
+
+  // Top 3 Risk-Increasing Contributors (from SHAP or Framingham heuristics)
+  readonly topIncreasingFactors = computed<FeatureContribution[]>(() => {
+    const exp = this.explanation();
+    if (exp?.top_positive_factors && exp.top_positive_factors.length > 0) {
+      return exp.top_positive_factors.slice(0, 3);
+    }
+    const factors = this.result()?.contributingFactors || [];
+    return factors
+      .filter((f) => f.impact > 0)
+      .slice(0, 3)
+      .map((f) => ({
+        feature: f.factor,
+        label: f.label,
+        raw_value: 0,
+        formatted_value: f.detail,
+        unit: "",
+        shap_value: f.impact,
+        contribution_pct: Math.round(f.impact * 10),
+        direction: "increased_risk" as const,
+        direction_label: "Increased Risk",
+        magnitude: f.impact,
+        clinical_insight: f.detail,
+      }));
+  });
+
+  // Top 2 Risk-Mitigating Contributors (from SHAP or Framingham heuristics)
+  readonly topDecreasingFactors = computed<FeatureContribution[]>(() => {
+    const exp = this.explanation();
+    if (exp?.top_negative_factors && exp.top_negative_factors.length > 0) {
+      return exp.top_negative_factors.slice(0, 2);
+    }
+    const factors = this.result()?.contributingFactors || [];
+    return factors
+      .filter((f) => f.impact < 0)
+      .slice(0, 2)
+      .map((f) => ({
+        feature: f.factor,
+        label: f.label,
+        raw_value: 0,
+        formatted_value: f.detail,
+        unit: "",
+        shap_value: f.impact,
+        contribution_pct: Math.round(Math.abs(f.impact) * 10),
+        direction: "decreased_risk" as const,
+        direction_label: "Decreased Risk",
+        magnitude: Math.abs(f.impact),
+        clinical_insight: f.detail,
+      }));
+  });
+
+  // Top 3 Clinical Recommendations
+  readonly topRecommendations = computed<string[]>(() => {
+    return this.result()?.recommendations?.slice(0, 3) || [];
+  });
+
+  // One concise sentence explaining the result
+  readonly riskDescription = computed<string>(() => {
+    const r = this.result();
+    if (!r) return "";
+    if (r.riskLevel === "low") {
+      return `Estimated 10-year coronary heart disease risk is ${r.riskScore}%, which falls in the Low Risk tier under clinical guidelines.`;
+    } else if (r.riskLevel === "medium") {
+      return `Estimated 10-year coronary heart disease risk is ${r.riskScore}%, which falls in the Moderate Risk tier under clinical guidelines.`;
+    } else {
+      return `Estimated 10-year coronary heart disease risk is ${r.riskScore}%, which falls in the High Risk tier under clinical guidelines.`;
+    }
+  });
 
 
   // Global feature importance chart data

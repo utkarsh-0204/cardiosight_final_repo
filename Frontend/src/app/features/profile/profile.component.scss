@@ -3,32 +3,36 @@
 }
 
 .profile-page {
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
+  padding: 0 4px 40px;
 }
 
 // ---------------------------------------------------------------------------
 // Head
 // ---------------------------------------------------------------------------
 .profile-head {
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 
   .eyebrow {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--primary);
+    color: var(--primary, #ef4444);
   }
 
   h1 {
     font-size: 26px;
-    margin: 2px 0 6px;
+    font-weight: 700;
+    margin: 4px 0 6px;
+    letter-spacing: -0.02em;
   }
 
   p {
     margin: 0;
-    color: var(--text-secondary);
+    font-size: 13.5px;
+    color: var(--text-secondary, #94a3b8);
   }
 }
 
@@ -38,17 +42,18 @@
 .profile-hero {
   display: flex;
   align-items: center;
-  gap: 22px;
-  padding: 28px 30px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  margin-bottom: 20px;
+  gap: 24px;
+  padding: 26px 30px;
+  background: var(--surface-elevated, #161f33);
+  border: 1px solid var(--border, #222e48);
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.25));
+  margin-bottom: 24px;
 
-  @media (max-width: 640px) {
+  @media (max-width: 680px) {
     flex-direction: column;
     text-align: center;
+    padding: 22px 20px;
   }
 }
 
@@ -56,22 +61,24 @@
   flex: 1;
 
   h2 {
-    font-size: 21px;
-    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
   }
 
   .role-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
+    padding: 3px 11px;
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    background: var(--danger-soft);
-    color: var(--primary);
+    letter-spacing: 0.08em;
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--primary, #ef4444);
+    border: 1px solid rgba(239, 68, 68, 0.25);
   }
 
   .email-line {
@@ -80,39 +87,58 @@
     gap: 7px;
     margin-top: 10px;
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--text-secondary, #94a3b8);
+
+    @media (max-width: 680px) {
+      justify-content: center;
+    }
 
     mat-icon {
       font-size: 16px;
       height: 16px;
       width: 16px;
-      color: var(--text-tertiary);
+      color: var(--text-tertiary, #64748b);
+    }
+
+    .verified-icon {
+      color: var(--success, #22c55e);
+      font-size: 15px;
+      height: 15px;
+      width: 15px;
+      margin-left: 2px;
     }
   }
 }
 
 .hero-stats {
   display: flex;
-  gap: 26px;
+  gap: 28px;
 
-  @media (max-width: 640px) {
+  @media (max-width: 680px) {
     justify-content: center;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid var(--border, #222e48);
   }
 
   .hero-stat {
     text-align: center;
+    min-width: 52px;
 
     strong {
       display: block;
       font-size: 24px;
       font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-primary, #f8fafc);
     }
 
     span {
-      font-size: 11.5px;
-      color: var(--text-tertiary);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary, #64748b);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
     }
   }
 }
@@ -122,57 +148,109 @@
 // ---------------------------------------------------------------------------
 .profile-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
   align-items: start;
 
-  @media (max-width: 920px) {
+  @media (max-width: 980px) {
     grid-template-columns: 1fr;
   }
+}
+
+.main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .side-col {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
+// ---------------------------------------------------------------------------
+// Card styling
+// ---------------------------------------------------------------------------
 .card {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: 26px;
+  background: var(--surface-elevated, #161f33);
+  border: 1px solid var(--border, #222e48);
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.15));
+  padding: 26px 28px;
 
-  h3 {
-    font-size: 15px;
-    margin: 0 0 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  @media (max-width: 640px) {
+    padding: 20px 18px;
+  }
 
-    mat-icon {
-      color: var(--primary);
-      font-size: 19px;
-      height: 19px;
-      width: 19px;
+  .card-header-clean {
+    margin-bottom: 22px;
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 5px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      letter-spacing: -0.01em;
+
+      mat-icon {
+        color: var(--primary, #ef4444);
+        font-size: 20px;
+        height: 20px;
+        width: 20px;
+      }
+    }
+
+    .card-sub {
+      color: var(--text-secondary, #94a3b8);
+      font-size: 13px;
+      margin: 0;
     }
   }
 
-  .card-sub {
-    color: var(--text-secondary);
-    font-size: 12.5px;
-    margin: 0 0 20px;
+  h3 {
+    font-size: 15.5px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    mat-icon {
+      color: var(--primary, #ef4444);
+      font-size: 20px;
+      height: 20px;
+      width: 20px;
+    }
   }
 }
 
+// ---------------------------------------------------------------------------
+// Form Fields Grid & Angular Material Form Field Overrides
+// ---------------------------------------------------------------------------
 .fields-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0 18px;
+  gap: 16px 20px;
+  align-items: start;
 
-  @media (max-width: 560px) {
+  @media (max-width: 640px) {
     grid-template-columns: 1fr;
+    gap: 14px 0;
+  }
+}
+
+.password-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+  align-items: start;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 14px 0;
   }
 }
 
@@ -180,48 +258,242 @@
   grid-column: 1 / -1;
 }
 
+.blood-field {
+  grid-column: 1;
+  @media (max-width: 640px) {
+    grid-column: 1 / -1;
+  }
+}
+
+.blood-spacer {
+  display: block;
+  @media (max-width: 640px) {
+    display: none;
+  }
+}
+
+// Scoped Form Field Theming
+mat-form-field {
+  width: 100%;
+  display: block;
+
+  .mat-mdc-text-field-wrapper {
+    background-color: var(--surface-muted, #111827) !important;
+    border-radius: 10px !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: var(--border, #24304c) !important;
+    border-width: 1px !important;
+  }
+
+  &:hover .mdc-notched-outline__leading,
+  &:hover .mdc-notched-outline__notch,
+  &:hover .mdc-notched-outline__trailing {
+    border-color: rgba(239, 68, 68, 0.45) !important;
+  }
+
+  &.mat-focused {
+    .mat-mdc-text-field-wrapper {
+      background-color: rgba(17, 24, 39, 0.98) !important;
+    }
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-color: var(--primary, #ef4444) !important;
+      border-width: 1.5px !important;
+    }
+  }
+
+  .mdc-floating-label {
+    color: var(--text-secondary, #94a3b8) !important;
+  }
+
+  &.mat-focused .mdc-floating-label {
+    color: var(--primary, #ef4444) !important;
+  }
+
+  [matPrefix] {
+    color: var(--text-tertiary, #64748b);
+    margin-right: 8px;
+    font-size: 19px;
+    height: 19px;
+    width: 19px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  [matTextSuffix] {
+    color: var(--text-tertiary, #64748b);
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+
+  input {
+    color: var(--text-primary, #f8fafc) !important;
+    font-size: 14px;
+
+    &::placeholder {
+      color: rgba(148, 163, 184, 0.45) !important;
+    }
+  }
+
+  .mat-mdc-select-value {
+    color: var(--text-primary, #f8fafc) !important;
+    font-size: 14px;
+  }
+
+  .mat-mdc-select-placeholder {
+    color: rgba(148, 163, 184, 0.45) !important;
+  }
+
+  .mat-mdc-form-field-subscript-wrapper {
+    padding: 0 4px;
+    font-size: 11.5px;
+  }
+}
+
+.password-visibility-btn {
+  color: var(--text-tertiary, #64748b);
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  margin-right: 2px;
+
+  &:hover {
+    color: var(--text-primary, #f8fafc);
+  }
+
+  mat-icon {
+    font-size: 19px;
+    height: 19px;
+    width: 19px;
+  }
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-}
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border, #222e48);
 
-// ---------------------------------------------------------------------------
-// Side cards
-// ---------------------------------------------------------------------------
-.bmi-card {
-  text-align: center;
+  button {
+    min-width: 110px;
+    border-radius: 8px;
+    font-weight: 600;
 
-  .ring-note {
-    margin-top: 14px;
-
-    strong {
-      display: block;
-      font-size: 20px;
-    }
-
-    span {
-      font-size: 12px;
-      color: var(--text-tertiary);
+    mat-icon {
+      font-size: 18px;
+      height: 18px;
+      width: 18px;
+      margin-right: 6px;
     }
   }
 }
 
+// ---------------------------------------------------------------------------
+// Security Section
+// ---------------------------------------------------------------------------
+.security-card {
+  .password-hint {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-tertiary, #64748b);
+    margin: 12px 0 0;
+
+    mat-icon {
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+      color: var(--text-tertiary, #64748b);
+    }
+  }
+
+  .mismatch-error {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    color: var(--danger, #ef4444);
+    margin-top: 10px;
+
+    mat-icon {
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Side cards: BMI Card
+// ---------------------------------------------------------------------------
+.bmi-card {
+  text-align: center;
+
+  .bmi-gauge-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 14px 0 6px;
+  }
+
+  .bmi-value-text {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .bmi-empty-text {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-tertiary, #64748b);
+  }
+
+  .ring-note {
+    margin-top: 12px;
+
+    strong {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    span {
+      font-size: 12px;
+      color: var(--text-tertiary, #64748b);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Side cards: Profile Completeness
+// ---------------------------------------------------------------------------
 .completeness {
   .completeness-track {
-    height: 9px;
+    height: 8px;
     border-radius: 999px;
-    background: var(--surface-muted);
+    background: var(--surface-muted, #111827);
     overflow: hidden;
-    margin: 12px 0 8px;
+    margin: 14px 0 8px;
 
     span {
       display: block;
       height: 100%;
       border-radius: 999px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-      transition: width 0.6s ease;
+      background: linear-gradient(90deg, var(--primary, #ef4444), #6366f1);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
@@ -229,42 +501,57 @@
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    color: var(--text-tertiary);
+    color: var(--text-tertiary, #64748b);
+
+    strong {
+      color: var(--text-primary, #f8fafc);
+      font-weight: 700;
+    }
   }
 }
 
 .check-list {
   list-style: none;
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   padding: 0;
 
   li {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 5px 0;
-    font-size: 12.5px;
-    color: var(--text-secondary);
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 13px;
+    color: var(--text-secondary, #94a3b8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+
+    &:last-child {
+      border-bottom: none;
+    }
 
     mat-icon {
-      font-size: 17px;
-      height: 17px;
-      width: 17px;
+      font-size: 18px;
+      height: 18px;
+      width: 18px;
+      flex-shrink: 0;
 
       &.done {
-        color: var(--success);
+        color: var(--success, #22c55e);
       }
 
       &.pending {
-        color: var(--text-tertiary);
+        color: var(--text-tertiary, #64748b);
+        opacity: 0.7;
       }
     }
   }
 }
 
+// ---------------------------------------------------------------------------
+// Side cards: Account details
+// ---------------------------------------------------------------------------
 .info-list {
   list-style: none;
-  margin: 0;
+  margin: 14px 0 0;
   padding: 0;
 
   li {
@@ -272,8 +559,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 9px 0;
-    border-bottom: 1px dashed var(--border);
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border, #222e48);
     font-size: 13px;
 
     &:last-child {
@@ -281,34 +568,23 @@
     }
 
     span {
-      color: var(--text-secondary);
+      color: var(--text-secondary, #94a3b8);
     }
 
     strong {
       font-weight: 600;
       text-align: right;
+      color: var(--text-primary, #f8fafc);
     }
-  }
-}
 
-// Password card
-.password-hint {
-  font-size: 11.5px;
-  color: var(--text-tertiary);
-  margin-top: -8px;
-}
-
-.mismatch-error {
-  font-size: 12px;
-  color: var(--danger);
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  mat-icon {
-    font-size: 15px;
-    height: 15px;
-    width: 15px;
+    .user-id-text {
+      font-size: 11.5px;
+      font-family: monospace;
+      color: var(--text-tertiary, #64748b);
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }

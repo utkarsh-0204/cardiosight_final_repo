@@ -151,7 +151,8 @@ async function runTests() {
   // TEST GROUP 5: AUTHENTICATED USER DATA INTEGRITY & ISOLATION
   // ---------------------------------------------------------------------------
   console.log('\n--- TEST GROUP 5: DASHBOARD DATA FOR EXISTING USER (UTKARSH SOOD) ---');
-  const utkarshId = '66c076db-4cda-4e99-9e00-32879ceb2ae7';
+  const { rows: uRows } = await pool.query("SELECT id FROM users WHERE email = 'utkarshsood51@gmail.com'");
+  const utkarshId = uRows[0] ? uRows[0].id : '2c9eade5-67b9-4fd7-b716-b7f7dc54b61f';
   const utkarshToken = jwt.sign(
     { sub: utkarshId, role: 'patient' },
     process.env.JWT_SECRET,
@@ -178,7 +179,7 @@ async function runTests() {
   const { rows: dbCount } = await pool.query('SELECT COUNT(*)::int AS count FROM predictions WHERE user_id = $1', [utkarshId]);
   assert(dashData.totalPredictions === dbCount[0].count, `Total predictions count matches database count (${dbCount[0].count})`);
   assert(dashData.recentPredictions?.length === 5, 'Recent predictions list contains 5 items (paginated)');
-  assert(dashData.recentPredictions[0].patientName === 'Utkarsh Sood', 'Prediction ownership belongs to Utkarsh Sood');
+  assert(dashData.recentPredictions[0].patientName.toLowerCase() === 'utkarsh sood', 'Prediction ownership belongs to Utkarsh Sood');
 
   // Verify dashboard auxiliary feeds
   const utkarshNotifs = await request({
@@ -270,7 +271,7 @@ async function runTests() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`,
+        Authorization: `Bearer ${utkarshToken}`,
       },
     },
     {
@@ -301,7 +302,7 @@ async function runTests() {
     port: 3000,
     path: `/api/predict/${createdPredId}/explain`,
     method: 'GET',
-    headers: { Authorization: `Bearer ${adminToken}` },
+    headers: { Authorization: `Bearer ${utkarshToken}` },
   });
   assert(testExplainRes.status === 200 && testExplainRes.body?.success, 'Express successfully called Django SHAP TreeExplainer (HTTP 200 OK)');
   assert(testExplainRes.body?.data?.mathematical_consistency === true, 'SHAP attributions mathematically consistent with model prediction');

@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS users (
   medications         JSONB        NOT NULL DEFAULT '[]',
   medical_conditions  JSONB        NOT NULL DEFAULT '[]',
   is_email_verified   BOOLEAN      NOT NULL DEFAULT FALSE,
+  is_test             BOOLEAN      NOT NULL DEFAULT FALSE,
+  status              VARCHAR(20)  NOT NULL DEFAULT 'active'
+                      CHECK (status IN ('active', 'inactive', 'suspended')),
   created_at          TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
@@ -80,3 +83,19 @@ CREATE TABLE IF NOT EXISTS verification_codes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_verification_codes_user ON verification_codes(user_id);
+
+-- ---------------------------------------------------------------------------
+-- audit_logs – administrative actions audit trail.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID REFERENCES users(id) ON DELETE SET NULL,
+  admin_email  VARCHAR(255),
+  action       VARCHAR(100) NOT NULL,
+  target_type  VARCHAR(50),
+  target_id    VARCHAR(100),
+  details      JSONB,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);

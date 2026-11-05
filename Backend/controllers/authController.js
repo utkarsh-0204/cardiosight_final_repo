@@ -28,13 +28,15 @@ function serializeUser(row) {
     avatarColor: row.avatar_color,
     gender: row.gender,
     dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth).toISOString().slice(0, 10) : '',
-    heightCm: row.height_cm != null ? Number(row.height_cm) : 0,
-    weightKg: row.weight_kg != null ? Number(row.weight_kg) : 0,
+    heightCm: row.height_cm != null && Number(row.height_cm) > 0 ? Number(row.height_cm) : null,
+    weightKg: row.weight_kg != null && Number(row.weight_kg) > 0 ? Number(row.weight_kg) : null,
     bloodGroup: row.blood_group || '',
     allergies: row.allergies || [],
     medications: row.medications || [],
     medicalConditions: row.medical_conditions || [],
     isEmailVerified: row.is_email_verified,
+    isTest: Boolean(row.is_test),
+    status: row.status || 'active',
     createdAt: new Date(row.created_at).toISOString(),
   };
 }
@@ -112,7 +114,15 @@ async function consumeCode(userId, purpose, code, { markUsed = true } = {}) {
 
 /** POST /api/auth/register */
 const register = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, password, phone, gender } = req.body || {};
+  const { firstName, lastName, email, password, phone, gender, role } = req.body || {};
+
+  // Reject explicit elevation to non-patient roles during registration
+  if (role !== undefined) {
+    const incomingRole = String(role).toLowerCase().trim();
+    if (incomingRole !== 'patient') {
+      throw new HttpError(403, 'Forbidden: Self-registration as administrator is not permitted.');
+    }
+  }
 
   if (!firstName || !String(firstName).trim()) throw new HttpError(400, 'First name is required.');
   if (!lastName || !String(lastName).trim()) throw new HttpError(400, 'Last name is required.');
@@ -124,20 +134,27 @@ const register = asyncHandler(async (req, res) => {
   if (existing) throw new HttpError(409, 'An account with this email already exists.');
 
   const passwordHash = await bcrypt.hash(String(password), 10);
+  const emailLower = String(email).toLowerCase().trim();
+  const isTestAccount = emailLower.endsWith('@cardiosight.local') ||
+                        emailLower.includes('testuser') ||
+                        emailLower.includes('patient_alpha') ||
+                        emailLower.includes('patient_beta') ||
+                        emailLower.includes('sysval');
 
   const { rows } = await pool.query(
     `INSERT INTO users
-       (first_name, last_name, email, password_hash, phone, gender, avatar_color)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+       (first_name, last_name, email, password_hash, phone, gender, avatar_color, is_test, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
      RETURNING *`,
     [
       String(firstName).trim(),
       String(lastName).trim(),
-      String(email).toLowerCase().trim(),
+      emailLower,
       passwordHash,
       phone ? String(phone).trim() : '',
       gender || 'other',
       '#43A047',
+      isTestAccount,
     ]
   );
   const user = rows[0];
@@ -168,6 +185,10 @@ const login = asyncHandler(async (req, res) => {
 
   const valid = await bcrypt.compare(String(password), user.password_hash);
   if (!valid) throw new HttpError(401, 'Invalid email or password.');
+
+  if (user.status === 'suspended') {
+    throw new HttpError(403, 'Your account has been suspended by an administrator. Please contact support.');
+  }
 
   res.json({
     success: true,

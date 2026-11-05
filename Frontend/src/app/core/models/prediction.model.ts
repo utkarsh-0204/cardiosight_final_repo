@@ -57,9 +57,11 @@ export interface EcgInput {
 export interface ExtractedField<T = number | string | null> {
   value: T;
   unit?: string;
-  status: "extracted" | "not_found" | "manual" | "uncertain";
+  status: "extracted" | "not_found" | "manual" | "uncertain" | "unsupported" | "not_applicable";
   confidence?: number;
   rawText?: string;
+  page?: number | null;
+  formatted?: string;
 }
 
 export interface EcgExtractionResponse {
@@ -68,9 +70,19 @@ export interface EcgExtractionResponse {
   fileName: string;
   pageCount: number;
   extractionStatus: string;
+  modality?: "single_lead" | "standard_12_lead";
   isScanned: boolean;
+  ocrApplied?: boolean;
+  docProcessing?: {
+    isScanned: boolean;
+    ocrApplied: boolean;
+    ocrNotice?: string | null;
+    pageCount: number;
+    statusText: string;
+  };
   fields: {
     heartRate: ExtractedField<number | null>;
+    recordingDate?: ExtractedField<string | null>;
     prInterval: ExtractedField<number | null>;
     qrsDuration: ExtractedField<number | null>;
     qtInterval: ExtractedField<number | null>;
@@ -78,8 +90,13 @@ export interface EcgExtractionResponse {
     stFindings: ExtractedField<string | null>;
     tWaveFindings: ExtractedField<string | null>;
     rhythm: ExtractedField<string | null>;
+    interpretation?: ExtractedField<string | null>;
   };
   reportedDiagnosis?: string | null;
+  extractedFieldsSummary?: string[];
+  manualReviewFieldsSummary?: string[];
+  missingFieldsSummary?: string[];
+  unsupportedFieldsSummary?: string[];
   warnings: string[];
   extractedAt: string;
 }
@@ -108,6 +125,8 @@ export interface EcgFindings {
 // ---------------------------------------------------------------------------
 
 export interface TmtInput {
+  age?: number | null;
+  sex?: number | null;
   exang?: number | null; // 0 = No, 1 = Yes
   oldpeak?: number | null; // ST depression in mm
   slope?: number | null; // 1 = Upsloping, 2 = Flat, 3 = Downsloping
@@ -126,25 +145,56 @@ export interface TmtExtractionResponse {
   fileName: string;
   pageCount: number;
   extractionStatus: string;
+  isMismatch?: boolean;
+  detectedType?: string | null;
   isScanned: boolean;
+  ocrApplied?: boolean;
+  docProcessing?: {
+    isScanned: boolean;
+    ocrApplied: boolean;
+    ocrNotice?: string | null;
+    pageCount: number;
+    statusText: string;
+  };
+  clinicalExtraction?: {
+    status: string;
+    extractedCount: number;
+    unreportedCount: number;
+    statusText: string;
+  };
+  durationFormatted?: string | null;
   fields: {
     exang: ExtractedField<number | null>;
     oldpeak: ExtractedField<number | null>;
     slope: ExtractedField<number | null>;
     thalach: ExtractedField<number | null>;
     restingHR: ExtractedField<number | null>;
+    restingBP?: ExtractedField<string | null>;
+    peakBP?: ExtractedField<string | null>;
     restecg: ExtractedField<number | null>;
     mets: ExtractedField<number | null>;
     durationMinutes: ExtractedField<number | null>;
+    durationFormatted?: ExtractedField<string | null>;
     protocol: ExtractedField<string | null>;
+    tmtResult?: ExtractedField<string | null>;
+    conclusion?: ExtractedField<string | null>;
   };
+  tmtResult?: string | null;
   reportedConclusion?: string | null;
+  reportedDts?: number | null;
+  extractedFieldsSummary?: string[];
+  manualReviewFieldsSummary?: string[];
+  missingFieldsSummary?: string[];
   warnings: string[];
   extractedAt: string;
 }
 
 export interface TmtFindings {
   status: "normal" | "inconclusive" | "ischemic_response" | "error";
+  demographics?: {
+    age?: number | null;
+    sex?: number | null;
+  } | null;
   measurements: {
     exang?: number | null;
     oldpeak?: number | null;
@@ -173,6 +223,7 @@ export interface TmtFindings {
     confidence: number;
     riskProbability: number;
     modelName: string;
+    featuresEvaluated?: Record<string, number | null> | null;
   } | null;
   reportedConclusion?: string | null;
   warnings?: string[];

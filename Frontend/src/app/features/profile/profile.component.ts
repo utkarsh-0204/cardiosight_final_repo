@@ -1,7 +1,7 @@
 // =============================================================================
 // Profile page – personal details, health metrics, security (password change).
 // =============================================================================
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { ProfileService } from '../../core/services/profile.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -38,7 +38,7 @@ import type { User } from '../../core/models/user.model';
     CircularProgressComponent,
   ],
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly profile = inject(ProfileService);
   private readonly auth = inject(AuthService);
@@ -50,69 +50,101 @@ export class ProfileComponent implements OnInit {
   readonly saving = signal(false);
   readonly changingPassword = signal(false);
 
-  readonly profileForm = this.fb.nonNullable.group({
-    firstName: ['', Validators.required],
-    lastName: ['', Validators.required],
+  // Password visibility controls
+  readonly hideCurrentPassword = signal(true);
+  readonly hideNewPassword = signal(true);
+  readonly hideConfirmPassword = signal(true);
+
+  // Prevent selecting future dates as date of birth
+  readonly maxDate = new Date().toISOString().split('T')[0];
+
+  readonly profileForm = this.fb.group({
+    firstName: ['', [Validators.required]],
+    lastName: ['', [Validators.required]],
     email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
     phone: [''],
     gender: ['male' as 'male' | 'female' | 'other'],
     dateOfBirth: [''],
-    heightCm: [0, [Validators.required, Validators.min(120), Validators.max(230)]],
-    weightKg: [0, [Validators.required, Validators.min(30), Validators.max(250)]],
+    heightCm: [null as number | null, [Validators.min(50), Validators.max(250)]],
+    weightKg: [null as number | null, [Validators.min(20), Validators.max(300)]],
     bloodGroup: [''],
     allergies: [''],
     medications: [''],
     medicalConditions: [''],
   });
 
-  readonly passwordForm = this.fb.nonNullable.group(
+  private readonly formValues = signal(this.profileForm.getRawValue());
+  private valueChangesSub?: Subscription;
+
+  readonly passwordForm = this.fb.group(
     {
-      currentPassword: ['', Validators.required],
+      currentPassword: ['', [Validators.required]],
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', Validators.required],
+      confirmPassword: ['', [Validators.required]],
     },
-    { validators: (g) =>
-      g.get('newPassword')?.value === g.get('confirmPassword')?.value ? null : { mismatch: true },
+    {
+      validators: (g) =>
+        g.get('newPassword')?.value === g.get('confirmPassword')?.value ? null : { mismatch: true },
     },
   );
 
-  readonly bmi = computed(() => {
-    const u = this.user();
-    if (!u) return 0;
-    const m = u.heightCm / 100;
-    if (!m) return 0;
-    return Math.round((u.weightKg / (m * m)) * 10) / 10;
+  /**
+   * Reactively computes BMI from form inputs as the user types.
+   * If either height or weight is missing, zero, or invalid, returns null.
+   */
+  readonly bmi = computed<number | null>(() => {
+    const vals = this.formValues();
+    const h = vals.heightCm != null && vals.heightCm !== ('' as any) ? Number(vals.heightCm) : null;
+    const w = vals.weightKg != null && vals.weightKg !== ('' as any) ? Number(vals.weightKg) : null;
+    if (!h || !w || h <= 0 || w <= 0 || isNaN(h) || isNaN(w)) {
+      return null;
+    }
+    const heightM = h / 100;
+    const val = w / (heightM * heightM);
+    if (!isFinite(val) || val <= 0) return null;
+    return Math.round(val * 10) / 10;
   });
 
   readonly bmiLevel = computed(() => {
     const b = this.bmi();
-    if (b >= 30) return { label: 'Obese', cls: 'high', color: '#E53935' };
-    if (b >= 25) return { label: 'Overweight', cls: 'medium', color: '#F9A825' };
-    if (b < 18.5) return { label: 'Underweight', cls: 'medium', color: '#F9A825' };
-    return { label: 'Healthy', cls: 'low', color: '#43A047' };
+    if (b === null) {
+      return {
+        label: 'Not available',
+        cls: 'neutral',
+        color: 'var(--text-tertiary)',
+        message: 'Enter valid height & weight to calculate',
+      };
+    }
+    if (b >= 30) return { label: 'Obese', cls: 'high', color: '#E53935', message: 'Based on your height & weight' };
+    if (b >= 25) return { label: 'Overweight', cls: 'medium', color: '#F9A825', message: 'Based on your height & weight' };
+    if (b < 18.5) return { label: 'Underweight', cls: 'medium', color: '#F9A825', message: 'Based on your height & weight' };
+    return { label: 'Healthy', cls: 'low', color: '#43A047', message: 'Based on your height & weight' };
   });
 
   readonly profileCompleteness = computed(() => {
     const u = this.user();
     if (!u) return 0;
-    let filled = 0;
     const checks = [
-      !!u.firstName && !!u.lastName,
-      !!u.phone,
-      !!u.dateOfBirth,
-      !!u.bloodGroup,
-      u.heightCm > 0,
-      u.weightKg > 0,
-      u.allergies.length > 0,
-      u.medicalConditions.length > 0,
-      u.medications.length > 0,
-      u.isEmailVerified,
+      Boolean(u.firstName?.trim() && u.lastName?.trim()),
+      Boolean(u.phone?.trim()),
+      Boolean(u.dateOfBirth),
+      Boolean(u.bloodGroup?.trim()),
+      Boolean(u.heightCm && u.heightCm > 0),
+      Boolean(u.weightKg && u.weightKg > 0),
+      Boolean(u.allergies && u.allergies.length > 0),
+      Boolean(u.medicalConditions && u.medicalConditions.length > 0),
+      Boolean(u.medications && u.medications.length > 0),
+      Boolean(u.isEmailVerified),
     ];
-    filled = checks.filter(Boolean).length;
+    const filled = checks.filter(Boolean).length;
     return Math.round((filled / checks.length) * 100);
   });
 
   ngOnInit(): void {
+    this.valueChangesSub = this.profileForm.valueChanges.subscribe(() => {
+      this.formValues.set(this.profileForm.getRawValue());
+    });
+
     this.profile.getProfile().subscribe({
       next: (u) => {
         this.user.set(u);
@@ -126,24 +158,30 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  patchForm(u: User): void {
-    this.profileForm.patchValue({
-      firstName: u.firstName,
-      lastName: u.lastName,
-      email: u.email,
-      phone: u.phone,
-      gender: u.gender,
-      dateOfBirth: u.dateOfBirth,
-      heightCm: u.heightCm,
-      weightKg: u.weightKg,
-      bloodGroup: u.bloodGroup,
-      allergies: u.allergies.join(', '),
-      medications: u.medications.join(', '),
-      medicalConditions: u.medicalConditions.join(', '),
-    });
+  ngOnDestroy(): void {
+    this.valueChangesSub?.unsubscribe();
   }
 
-  toList(value: string): string[] {
+  patchForm(u: User): void {
+    this.profileForm.patchValue({
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      gender: u.gender || 'male',
+      dateOfBirth: u.dateOfBirth || '',
+      heightCm: u.heightCm && u.heightCm > 0 ? u.heightCm : null,
+      weightKg: u.weightKg && u.weightKg > 0 ? u.weightKg : null,
+      bloodGroup: u.bloodGroup || '',
+      allergies: (u.allergies || []).join(', '),
+      medications: (u.medications || []).join(', '),
+      medicalConditions: (u.medicalConditions || []).join(', '),
+    });
+    this.formValues.set(this.profileForm.getRawValue());
+  }
+
+  toList(value: string | null | undefined): string[] {
+    if (!value) return [];
     return value
       .split(',')
       .map((s) => s.trim())
@@ -153,19 +191,23 @@ export class ProfileComponent implements OnInit {
   saveProfile(): void {
     if (this.profileForm.invalid) return;
     const v = this.profileForm.getRawValue();
+    const h = v.heightCm != null && (v.heightCm as any) !== '' && Number(v.heightCm) > 0 ? Number(v.heightCm) : null;
+    const w = v.weightKg != null && (v.weightKg as any) !== '' && Number(v.weightKg) > 0 ? Number(v.weightKg) : null;
+
     const payload: Partial<User> = {
-      firstName: v.firstName,
-      lastName: v.lastName,
-      phone: v.phone,
-      gender: v.gender,
-      dateOfBirth: v.dateOfBirth,
-      heightCm: v.heightCm,
-      weightKg: v.weightKg,
-      bloodGroup: v.bloodGroup,
+      firstName: (v.firstName || '').trim(),
+      lastName: (v.lastName || '').trim(),
+      phone: (v.phone || '').trim(),
+      gender: (v.gender as any) || 'male',
+      dateOfBirth: v.dateOfBirth || '',
+      heightCm: h,
+      weightKg: w,
+      bloodGroup: v.bloodGroup || '',
       allergies: this.toList(v.allergies),
       medications: this.toList(v.medications),
       medicalConditions: this.toList(v.medicalConditions),
     };
+
     this.saving.set(true);
     this.profile
       .updateProfile(payload)
@@ -173,6 +215,7 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: (updated) => {
           this.user.set(updated);
+          this.patchForm(updated);
           this.toast.success('Profile updated', 'Your changes have been saved.');
         },
         error: () => this.toast.error('Update failed', 'Could not save your profile.'),
@@ -181,11 +224,15 @@ export class ProfileComponent implements OnInit {
 
   changePassword(): void {
     if (this.passwordForm.invalid) return;
+    const current = this.passwordForm.get('currentPassword')?.value;
+    const next = this.passwordForm.get('newPassword')?.value;
+    if (!current || !next) return;
+
     this.changingPassword.set(true);
     this.profile
       .changePassword({
-        currentPassword: this.passwordForm.controls.currentPassword.value,
-        newPassword: this.passwordForm.controls.newPassword.value,
+        currentPassword: current,
+        newPassword: next,
       })
       .pipe(finalize(() => this.changingPassword.set(false)))
       .subscribe({

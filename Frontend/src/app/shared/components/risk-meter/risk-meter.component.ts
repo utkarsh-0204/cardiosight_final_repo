@@ -181,16 +181,20 @@ export class RiskMeterComponent {
     return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${this.radius} ${this.radius} 0 ${large} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
   }
 
+  // Standard Framingham / NCEP ATP III 10-Year CHD Risk Stratification:
+  // - Low Risk (< 10%): Green zone [0 to 0.10]
+  // - Moderate / Intermediate Risk (10% to < 20%): Amber zone [0.10 to 0.20]
+  // - High Risk (>= 20%): Red zone [0.20 to 1.0]
   get zoneGreen(): string {
-    return this.arcPath(0, 0.35);
+    return this.arcPath(0, 0.10);
   }
 
   get zoneAmber(): string {
-    return this.arcPath(0.35, 0.6);
+    return this.arcPath(0.10, 0.20);
   }
 
   get zoneRed(): string {
-    return this.arcPath(0.6, 1);
+    return this.arcPath(0.20, 1.0);
   }
 
   get valueArc(): string {

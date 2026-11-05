@@ -1,239 +1,293 @@
-<!-- Welcome banner -->
-<section class="welcome-card">
-  <div class="welcome-glow"></div>
-  <div class="welcome-copy">
-    <span class="welcome-chip">
-      <span class="pulse-dot"></span> {{ greeting() }}, {{ user()?.firstName }}
-    </span>
-    <h1>How is your heart today?</h1>
-    <p>
-      @if (summary()?.recentPredictions?.length) {
-        Your latest assessment shows a <strong>{{ summary()?.riskLevel | riskLabel }}</strong>
-        with a health score of <strong>{{ summary()?.healthScore }}/100</strong>.
-        Run a new prediction or review your insights below.
-      } @else {
-        No assessments recorded yet. Run your first prediction to calculate your personalized coronary health score and clinical insights.
-      }
-    </p>
-    <div class="welcome-actions">
-      <button mat-flat-button color="primary" (click)="goPredict()">
-        <mat-icon>monitor_heart</mat-icon> New prediction
-      </button>
-      <button mat-stroked-button (click)="openAllNotifications()">
-        <mat-icon>insights</mat-icon> View insights
+<!-- ============================================================================= -->
+<!-- CardioSight Dashboard – Restrained, Clinical Healthcare SaaS Platform        -->
+<!-- Minimal, calm, information-focused layout inspired by Linear, Stripe & Apple -->
+<!-- ============================================================================= -->
+
+<div class="dashboard-shell">
+  <!-- A. Welcome Header -->
+  <header class="dash-welcome">
+    <div class="welcome-left">
+      <h1 class="welcome-greeting">{{ greeting() }}, {{ user()?.firstName || 'User' }}</h1>
+      <div class="patient-id-bar">
+        <span>Patient: <strong class="patient-name">{{ latestPrediction()?.patientName || (user()?.firstName + ' ' + (user()?.lastName || '')) }}</strong></span>
+        <span class="sep">·</span>
+        <span>Record: <code class="patient-code">#CS-{{ patientIdCode() }}</code></span>
+        <span class="sep">·</span>
+        <span>{{ latestPrediction()?.age ?? 55 }} yrs</span>
+        <span class="sep">·</span>
+        <span>{{ patientGender() }}</span>
+      </div>
+      <div class="status-summary-bar">
+        @if (latestPrediction()) {
+          <span class="status-label">Assessment Status:</span>
+          <span class="status-badge" [ngClass]="summary()?.riskLevel | riskClass">
+            {{ summary()?.riskLevel | riskLabel }} Risk ({{ summary()?.riskScore }}%)
+          </span>
+        } @else {
+          <span class="status-label text-muted">No baseline assessment recorded.</span>
+        }
+      </div>
+    </div>
+
+    <div class="welcome-right">
+      <button mat-flat-button class="btn-subtle-primary" (click)="goPredict()">
+        <mat-icon>add</mat-icon> New Prediction
       </button>
     </div>
-  </div>
-  <div class="welcome-art" aria-hidden="true">
-    <svg viewBox="0 0 260 200">
-      <path d="M10 140 L55 140 L80 90 L120 170 L150 110 L175 140 L250 140"
-            fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M10 140 L55 140 L80 90 L120 170 L150 110 L175 140 L250 140"
-            fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"
-            stroke-dasharray="420" stroke-dashoffset="0" opacity="0.25"/>
-    </svg>
-    <div class="heart-pulse">
-      <mat-icon>favorite</mat-icon>
+  </header>
+
+  <!-- B. Risk Overview (Main Focus) -->
+  <section class="dash-block risk-focus-block">
+    <div class="block-header">
+      <div>
+        <h2 class="block-title">Cardiovascular Risk Overview</h2>
+        <p class="block-subtitle">10-Year Framingham Coronary Heart Disease Assessment</p>
+      </div>
+      <div class="health-score-pill">
+        <span class="hs-label">Vascular Health Score</span>
+        <span class="hs-value">{{ summary()?.healthScore ?? 0 }}<small>/100</small></span>
+      </div>
     </div>
-  </div>
-</section>
 
-<!-- Stat cards -->
-@if (loading()) {
-  <div class="stat-grid">
-    @for (_ of [1, 2, 3, 4]; track $index) {
-      <app-skeleton variant="card"></app-skeleton>
-    }
-  </div>
-} @else {
-  <div class="stat-grid stagger">
-    <app-stat-card label="Health score" icon="favorite" tone="primary" [trend]="4">
-      <app-counter [value]="summary()?.healthScore ?? 0" suffix="/100"></app-counter>
-    </app-stat-card>
-    <app-stat-card [label]="'Risk: ' + (summary()?.riskLevel | riskLabel)" icon="speed" [tone]="summary()?.riskLevel === 'high' ? 'danger' : summary()?.riskLevel === 'medium' ? 'warning' : 'accent'" [trend]="summary()?.riskLevel === 'high' ? 12 : summary()?.riskLevel === 'medium' ? 5 : -8">
-      <app-counter [value]="summary()?.riskScore ?? 0" suffix="%"></app-counter>
-    </app-stat-card>
-    <app-stat-card label="Total predictions" icon="history" tone="secondary" [trend]="14" subtitle="all time">
-      <app-counter [value]="summary()?.totalPredictions ?? 0"></app-counter>
-    </app-stat-card>
-    <app-stat-card label="This month" icon="calendar_month" tone="accent" subtitle="predictions this month">
-      <app-counter [value]="summary()?.monthPredictions ?? 0"></app-counter>
-    </app-stat-card>
-  </div>
-}
-
-<!-- Main grid -->
-<div class="dash-grid">
-  <div class="dash-left">
-    <!-- Recent predictions -->
-    <section class="card panel">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title">Recent predictions</h2>
-          <p class="panel-sub">Your latest coronary risk assessments</p>
+    <div class="risk-highlight-row">
+      <div class="risk-primary-stat">
+        <span class="risk-percentage" [style.color]="riskColor()">{{ summary()?.riskScore ?? 0 }}%</span>
+        <div class="risk-status-meta">
+          <span class="status-badge badge-lg" [ngClass]="summary()?.riskLevel | riskClass">
+            {{ summary()?.riskLevel | riskLabel }} Risk
+          </span>
+          <span class="meta-detail">{{ latestPrediction()?.confidence ?? 69 }}% model confidence</span>
         </div>
-        <a routerLink="/app/history" class="link-all">
-          View all <mat-icon>arrow_forward</mat-icon>
-        </a>
       </div>
 
-      @if (loading()) {
-        <app-skeleton variant="list" [rows]="4"></app-skeleton>
-      } @else if (summary()?.recentPredictions?.length) {
-        <div class="recent-list">
-          @for (prediction of summary()?.recentPredictions; track prediction.id) {
-            <button class="recent-row" (click)="viewResult(prediction.id)">
-              <span class="recent-icon" [class.low]="prediction.riskLevel === 'low'" [class.medium]="prediction.riskLevel === 'medium'" [class.high]="prediction.riskLevel === 'high'">
-                <mat-icon>monitor_heart</mat-icon>
-              </span>
-              <span class="recent-main">
-                <strong>{{ prediction.patientName }}</strong>
-                <em>{{ prediction.submittedAt | date: 'MMM d, yyyy · h:mm a' }}</em>
-              </span>
-              <span class="recent-score">
-                <strong>{{ prediction.riskScore }}%</strong>
-                <span class="chip" [ngClass]="prediction.riskLevel | riskClass">{{ prediction.riskLevel | riskLabel }}</span>
-              </span>
-              <mat-icon class="recent-chev">chevron_right</mat-icon>
-            </button>
+      <!-- Small, clean horizontal risk indicator -->
+      <div class="horizontal-risk-meter">
+        <div class="meter-track">
+          <div class="meter-band band-low" title="Low Risk (&lt;10%)"></div>
+          <div class="meter-band band-med" title="Moderate Risk (10–20%)"></div>
+          <div class="meter-band band-high" title="High Risk (&gt;20%)"></div>
+          <div class="meter-pin" [style.left.%]="summary()?.riskScore ?? 0"></div>
+        </div>
+        <div class="meter-scale-text">
+          <span>0%</span>
+          <span>Low (&lt;10%)</span>
+          <span>10%</span>
+          <span>Moderate (10–20%)</span>
+          <span>20%</span>
+          <span>High (&gt;20%)</span>
+          <span>100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brief explanation of the result -->
+    <div class="risk-explanation-box">
+      <p class="explanation-text">{{ riskExplanation() }}</p>
+    </div>
+  </section>
+
+  <!-- C. Clinical Indicators (Compact, Essential 5 Markers) -->
+  <section class="dash-block">
+    <div class="block-header">
+      <h2 class="block-title">Clinical Indicators</h2>
+      <span class="block-subtitle">Key Baseline Vitals &amp; Biomarkers</span>
+    </div>
+
+    @if (loading()) {
+      <div class="vitals-row">
+        @for (_ of [1, 2, 3, 4, 5]; track $index) {
+          <app-skeleton variant="card"></app-skeleton>
+        }
+      </div>
+    } @else {
+      <div class="vitals-row">
+        @for (item of clinicalIndicators(); track item.label) {
+          <div class="vital-tile" [ngClass]="'status-' + item.status">
+            <span class="vital-name">{{ item.label }}</span>
+            <div class="vital-reading">
+              <span class="vital-num">{{ item.value }}</span>
+              <span class="vital-unit">{{ item.unit }}</span>
+            </div>
+            <span class="vital-classification" [ngClass]="'class-' + item.status">{{ item.tag }}</span>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- D. Assessment History (Clean Table with View History link) -->
+  <section class="dash-block">
+    <div class="block-header">
+      <div>
+        <h2 class="block-title">Assessment History</h2>
+        <p class="block-subtitle">Longitudinal evaluations and outcomes</p>
+      </div>
+      <a routerLink="/app/history" class="text-link">View History &rarr;</a>
+    </div>
+
+    @if (loading()) {
+      <app-skeleton variant="list" [rows]="3"></app-skeleton>
+    } @else if (recentPredictions().length) {
+      <div class="table-container">
+        <table class="clinical-table">
+          <thead>
+            <tr>
+              <th>Evaluation Date</th>
+              <th>Patient</th>
+              <th>10-Year Risk</th>
+              <th>Classification</th>
+              <th>Investigations</th>
+              <th class="col-action">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rec of recentPredictions(); track rec.id) {
+              <tr (click)="viewResult(rec.id)" tabindex="0" role="button">
+                <td class="cell-date">{{ rec.submittedAt | date:'mediumDate' }}</td>
+                <td class="cell-name">{{ rec.patientName }}</td>
+                <td class="cell-score"><strong>{{ rec.riskScore }}%</strong></td>
+                <td>
+                  <span class="status-badge" [ngClass]="rec.riskLevel | riskClass">
+                    {{ rec.riskLevel | riskLabel }}
+                  </span>
+                </td>
+                <td class="cell-tags">
+                  @if (hasRecordEcg(rec)) {
+                    <span class="code-tag">ECG</span>
+                  }
+                  @if (hasRecordTmt(rec)) {
+                    <span class="code-tag">TMT</span>
+                  }
+                  @if (!hasRecordEcg(rec) && !hasRecordTmt(rec)) {
+                    <span class="cell-muted">—</span>
+                  }
+                </td>
+                <td class="col-action">
+                  <span class="action-link">View Report &rarr;</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="empty-compact">
+        <span>No previous assessment records on file. Completed evaluations will appear here.</span>
+      </div>
+    }
+  </section>
+
+  <!-- E. ECG & TMT (Two Simple Sections, Subtle Empty States) -->
+  <section class="investigations-pair">
+    <!-- 12-Lead ECG Analysis -->
+    <div class="dash-block inv-block">
+      <div class="block-header">
+        <div>
+          <h2 class="block-title">12-Lead ECG Analysis</h2>
+          <p class="block-subtitle">Rhythm &amp; Wave Morphology</p>
+        </div>
+        @if (hasEcg() && latestEcg(); as ecg) {
+          <span class="status-badge" [class.badge-abnormal]="ecg.status === 'abnormal'" [class.badge-normal]="ecg.status === 'normal'">
+            {{ ecg.status | uppercase }}
+          </span>
+        }
+      </div>
+
+      @if (hasEcg() && latestEcg(); as ecg) {
+        <div class="inv-data-body">
+          <div class="inv-lead-summary">
+            <strong>{{ ecg.rhythm || 'Sinus Rhythm' }}</strong>
+            <span>{{ ecg.interpretationSummary || 'Standard clinical rhythm parameters' }}</span>
+          </div>
+
+          <div class="inv-metrics-line">
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">Heart Rate</span>
+              <strong class="cell-num">{{ ecg.measurements.heartRate ?? '—' }} bpm</strong>
+            </div>
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">PR Interval</span>
+              <strong class="cell-num">{{ ecg.measurements.prInterval ?? '—' }} ms</strong>
+            </div>
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">QRS Width</span>
+              <strong class="cell-num">{{ ecg.measurements.qrsDuration ?? '—' }} ms</strong>
+            </div>
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">QTc Interval</span>
+              <strong class="cell-num">{{ ecg.measurements.qtcInterval ?? '—' }} ms</strong>
+            </div>
+          </div>
+
+          @if (ecg.abnormalities && ecg.abnormalities.length > 0) {
+            <div class="inv-abnormalities">
+              <span class="abn-head">Findings:</span>
+              <span class="abn-text">{{ ecg.abnormalities.join(', ') }}</span>
+            </div>
           }
         </div>
       } @else {
-        <app-empty-state icon="monitor_heart" title="No predictions yet" message="Run your first risk assessment to see results here.">
-          <button mat-flat-button color="primary" (click)="goPredict()">Start prediction</button>
-        </app-empty-state>
-      }
-    </section>
-
-    <!-- Risk trend chart -->
-    <section class="card panel">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title">Risk trend</h2>
-          <p class="panel-sub">Your risk score across recent assessments</p>
+        <div class="subtle-empty-banner">
+          <span>No 12-lead ECG report attached to the current assessment.</span>
+          <button class="btn-text-link" (click)="goPredict()">Upload / Attach ECG &rarr;</button>
         </div>
-        <span class="chip chip-primary">Last 5</span>
-      </div>
-      @if (loading()) {
-        <app-skeleton variant="chart"></app-skeleton>
-      } @else {
-        <app-chart kind="line" [labels]="trendLabels()" [datasets]="trendDatasets()" [options]="trendChartOptions" height="250px"></app-chart>
       }
-    </section>
-  </div>
+    </div>
 
-  <div class="dash-right">
-    <!-- Health score ring -->
-    <section class="card panel health-panel">
-      <h2 class="panel-title">Health score</h2>
-      <div class="health-ring-wrap">
-        <app-circular-progress [value]="summary()?.recentPredictions?.length ? (summary()?.healthScore ?? 0) : 0" [color]="healthScoreColor()" [size]="170" [strokeWidth]="12">
-          <strong class="ring-value">{{ summary()?.recentPredictions?.length ? (summary()?.healthScore ?? 0) : '—' }}</strong>
-          <span class="ring-label">{{ summary()?.recentPredictions?.length ? 'out of 100' : 'no score yet' }}</span>
-        </app-circular-progress>
+    <!-- TMT Stress Test Analysis -->
+    <div class="dash-block inv-block">
+      <div class="block-header">
+        <div>
+          <h2 class="block-title">TMT Stress Test</h2>
+          <p class="block-subtitle">Workload &amp; Duke Treadmill Score</p>
+        </div>
+        @if (hasTmt() && latestTmt(); as tmt) {
+          <span class="status-badge" [class.badge-abnormal]="tmt.status === 'ischemic_response'" [class.badge-normal]="tmt.status === 'normal'">
+            {{ tmt.status === 'ischemic_response' ? 'ISCHEMIC' : (tmt.status | uppercase) }}
+          </span>
+        }
       </div>
-      <div class="metric-list">
-        @for (metric of summary()?.metrics ?? []; track metric.key) {
-          <div class="metric-row">
-            <div>
-              <strong>{{ metric.label }}</strong>
-              <span class="text-muted">{{ metric.value }} {{ metric.unit }}</span>
-            </div>
-            <span class="metric-status" [class]="'is-' + metric.status">
-              {{ metric.status === 'good' ? 'Good' : metric.status === 'warning' ? 'Watch' : 'High' }}
-            </span>
+
+      @if (hasTmt() && latestTmt(); as tmt) {
+        <div class="inv-data-body">
+          <div class="inv-lead-summary">
+            <strong>{{ tmt.reportedConclusion || 'Stress test complete' }}</strong>
+            <span>Exercise workload &amp; hemodynamic tolerance</span>
           </div>
-        }
-      </div>
-    </section>
 
-    <!-- Health tips carousel -->
-    <section class="card panel">
-      <div class="panel-head">
-        <h2 class="panel-title">Daily health tips</h2>
-        <mat-icon class="panel-icon">tips_and_updates</mat-icon>
-      </div>
-      <app-health-tips-carousel [tips]="tips()"></app-health-tips-carousel>
-    </section>
-
-    <!-- Notifications -->
-    <section class="card panel" id="notifications">
-      <div class="panel-head">
-        <h2 class="panel-title">Notifications</h2>
-        @if (recentNotifications().length) {
-          <button class="link-all" (click)="markAllNotificationsRead()">Mark all read</button>
-        }
-      </div>
-      <div class="notif-mini-list">
-        @for (notification of recentNotifications(); track notification.id) {
-          <button class="notif-mini" [class.unread]="!notification.read" (click)="markNotificationRead(notification.id)">
-            <span class="notif-mini-icon" [style.--n-tone]="notification.type === 'success' ? 'var(--success)' : notification.type === 'warning' ? 'var(--warning)' : notification.type === 'danger' ? 'var(--danger)' : 'var(--info)'">
-              <mat-icon>{{ notification.icon }}</mat-icon>
-            </span>
-            <span class="notif-mini-body">
-              <strong>{{ notification.title }}</strong>
-              <em>{{ notification.message }}</em>
-            </span>
-            @if (!notification.read) {
-              <span class="unread-dot"></span>
-            }
-          </button>
-        } @empty {
-          <app-empty-state icon="notifications_off" title="All caught up" message="You have no new notifications."></app-empty-state>
-        }
-      </div>
-    </section>
-
-    <!-- Activity timeline -->
-    <section class="card panel">
-      <div class="panel-head">
-        <h2 class="panel-title">Recent activity</h2>
-      </div>
-      <div class="timeline">
-        @for (activity of activities(); track activity.id) {
-          <div class="timeline-item">
-            <span class="timeline-dot" [style.--a-color]="activity.color"></span>
-            <div class="timeline-body">
-              <p>
-                <strong>{{ activity.actor }}</strong> {{ activity.action }}
-                <span class="text-muted">· {{ activity.target }}</span>
-              </p>
-              <em>{{ activity.createdAt | timeAgo }}</em>
+          <div class="inv-metrics-line">
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">Workload</span>
+              <strong class="cell-num">{{ tmt.measurements.mets ?? '—' }} METs</strong>
+            </div>
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">ST Depression</span>
+              <strong class="cell-num">{{ tmt.measurements.oldpeak ?? '0.0' }} mm</strong>
+            </div>
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">Max Heart Rate</span>
+              <strong class="cell-num">{{ tmt.measurements.thalach ?? '—' }} bpm</strong>
+            </div>
+            <div class="inv-metric-cell">
+              <span class="cell-lbl">Ex. Angina</span>
+              <strong class="cell-num">{{ tmt.measurements.exang === 1 ? 'Present' : 'None' }}</strong>
             </div>
           </div>
-        } @empty {
-          <app-empty-state icon="timeline" title="No activity yet" message="Your actions will appear here."></app-empty-state>
-        }
-      </div>
-    </section>
-  </div>
+
+          @if (tmt.dukeTreadmillScore) {
+            <div class="duke-strip">
+              <span>Duke Treadmill Score: <strong>{{ tmt.dukeTreadmillScore.score }}</strong> ({{ tmt.dukeTreadmillScore.riskCategory }})</span>
+              <span class="sep">·</span>
+              <span class="cell-muted">Est. Annual Mortality: {{ tmt.dukeTreadmillScore.estimatedAnnualMortality }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="subtle-empty-banner">
+          <span>No treadmill stress test findings recorded for this assessment.</span>
+          <button class="btn-text-link" (click)="goPredict()">Upload / Attach TMT &rarr;</button>
+        </div>
+      }
+    </div>
+  </section>
 </div>
-
-<!-- Quick actions -->
-<section class="card panel quick-actions">
-  <div class="panel-head">
-    <h2 class="panel-title">Quick actions</h2>
-  </div>
-  <div class="quick-grid">
-    <button class="quick-action" (click)="onQuickAction('predict')">
-      <span class="qa-icon primary"><mat-icon>add_task</mat-icon></span>
-      <strong>New prediction</strong>
-      <em>Assess current risk</em>
-    </button>
-    <button class="quick-action" (click)="onQuickAction('history')">
-      <span class="qa-icon secondary"><mat-icon>history</mat-icon></span>
-      <strong>View history</strong>
-      <em>All past assessments</em>
-    </button>
-    <button class="quick-action" (click)="onQuickAction('analytics')">
-      <span class="qa-icon accent"><mat-icon>query_stats</mat-icon></span>
-      <strong>Analytics</strong>
-      <em>Explore trends</em>
-    </button>
-    <button class="quick-action" (click)="onQuickAction('profile')">
-      <span class="qa-icon warning"><mat-icon>manage_accounts</mat-icon></span>
-      <strong>Update profile</strong>
-      <em>Keep data current</em>
-    </button>
-  </div>
-</section>

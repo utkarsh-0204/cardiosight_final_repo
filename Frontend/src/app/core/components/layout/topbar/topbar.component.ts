@@ -140,20 +140,8 @@ import { SearchOverlayComponent } from '../search-overlay/search-overlay.compone
         gap: 14px;
         height: var(--topbar-height);
         padding: 0 22px;
-        background: var(--surface-glass);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
+        background: var(--surface);
         border-bottom: 1px solid var(--border);
-      }
-      .topbar::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: -1px;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(229, 57, 53, 0.35), rgba(21, 101, 192, 0.35), transparent);
-        opacity: 0.7;
       }
       .topbar-left,
       .topbar-right {

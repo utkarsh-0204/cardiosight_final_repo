@@ -2,12 +2,8 @@
 
   <div class="form-head">
     <div>
-      <span class="eyebrow">
-        CARDIOSIGHT RISK ASSESSMENT
-      </span>
-
+      <span class="eyebrow">CARDIOSIGHT RISK ASSESSMENT</span>
       <h1>New Prediction</h1>
-
       <p>
         Enter the patient's clinical information to estimate 10-year coronary heart disease risk,
         with optional ECG and exercise stress test investigation analysis.
@@ -71,6 +67,7 @@
           <mat-form-field appearance="outline">
             <mat-label>Age</mat-label>
             <input matInput type="number" formControlName="age" />
+            <span matTextSuffix>years</span>
             <mat-hint>18–100 years</mat-hint>
           </mat-form-field>
 
@@ -82,7 +79,7 @@
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" class="span-2">
             <mat-label>Education level</mat-label>
             <mat-select formControlName="education">
               <mat-option [value]="1">Level 1 (Some High School)</mat-option>
@@ -108,30 +105,34 @@
           </div>
         </div>
 
-        <div class="toggle-row">
-          <div>
-            <strong>Current smoker</strong>
-            <em>Does the patient currently smoke cigarettes?</em>
+        <div class="toggle-group-card">
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Current smoker</strong>
+              <em>Does the patient currently smoke cigarettes?</em>
+            </div>
+            <mat-slide-toggle
+              color="primary"
+              [checked]="form.controls.currentSmoker.value === 1"
+              (change)="form.controls.currentSmoker.setValue($event.checked ? 1 : 0)">
+            </mat-slide-toggle>
           </div>
-
-          <mat-slide-toggle
-            color="primary"
-            [checked]="form.controls.currentSmoker.value === 1"
-            (change)="form.controls.currentSmoker.setValue($event.checked ? 1 : 0)">
-          </mat-slide-toggle>
         </div>
 
-        <mat-form-field appearance="outline" class="full-field">
-          <mat-label>Cigarettes per day</mat-label>
-          <input
-            matInput
-            type="number"
-            min="0"
-            max="100"
-            formControlName="cigsPerDay"
-          />
-          <mat-hint>Enter 0 if the patient is a non-smoker</mat-hint>
-        </mat-form-field>
+        <div class="fields-grid single-field-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Cigarettes per day</mat-label>
+            <input
+              matInput
+              type="number"
+              min="0"
+              max="100"
+              formControlName="cigsPerDay"
+            />
+            <span matTextSuffix>cigs/day</span>
+            <mat-hint>Enter 0 if the patient is a non-smoker</mat-hint>
+          </mat-form-field>
+        </div>
       </section>
 
       <!-- ========================================================= -->
@@ -148,52 +149,54 @@
           </div>
         </div>
 
-        <div class="toggle-row">
-          <div>
-            <strong>Blood pressure medication</strong>
-            <em>Currently prescribed antihypertensive drugs?</em>
+        <div class="toggle-group-card">
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Blood pressure medication</strong>
+              <em>Currently prescribed antihypertensive drugs?</em>
+            </div>
+            <mat-slide-toggle
+              color="primary"
+              [checked]="form.controls.BPMeds.value === 1"
+              (change)="form.controls.BPMeds.setValue($event.checked ? 1 : 0)">
+            </mat-slide-toggle>
           </div>
-          <mat-slide-toggle
-            color="primary"
-            [checked]="form.controls.BPMeds.value === 1"
-            (change)="form.controls.BPMeds.setValue($event.checked ? 1 : 0)">
-          </mat-slide-toggle>
-        </div>
 
-        <div class="toggle-row">
-          <div>
-            <strong>Previous stroke</strong>
-            <em>Documented history of stroke or TIA?</em>
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Previous stroke</strong>
+              <em>Documented history of stroke or TIA?</em>
+            </div>
+            <mat-slide-toggle
+              color="primary"
+              [checked]="form.controls.prevalentStroke.value === 1"
+              (change)="form.controls.prevalentStroke.setValue($event.checked ? 1 : 0)">
+            </mat-slide-toggle>
           </div>
-          <mat-slide-toggle
-            color="primary"
-            [checked]="form.controls.prevalentStroke.value === 1"
-            (change)="form.controls.prevalentStroke.setValue($event.checked ? 1 : 0)">
-          </mat-slide-toggle>
-        </div>
 
-        <div class="toggle-row">
-          <div>
-            <strong>Hypertension</strong>
-            <em>Diagnosed hypertension condition?</em>
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Hypertension</strong>
+              <em>Diagnosed hypertension condition?</em>
+            </div>
+            <mat-slide-toggle
+              color="primary"
+              [checked]="form.controls.prevalentHyp.value === 1"
+              (change)="form.controls.prevalentHyp.setValue($event.checked ? 1 : 0)">
+            </mat-slide-toggle>
           </div>
-          <mat-slide-toggle
-            color="primary"
-            [checked]="form.controls.prevalentHyp.value === 1"
-            (change)="form.controls.prevalentHyp.setValue($event.checked ? 1 : 0)">
-          </mat-slide-toggle>
-        </div>
 
-        <div class="toggle-row">
-          <div>
-            <strong>Diabetes</strong>
-            <em>Diagnosed Type 1 or Type 2 diabetes mellitus?</em>
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <strong>Diabetes</strong>
+              <em>Diagnosed Type 1 or Type 2 diabetes mellitus?</em>
+            </div>
+            <mat-slide-toggle
+              color="primary"
+              [checked]="form.controls.diabetes.value === 1"
+              (change)="form.controls.diabetes.setValue($event.checked ? 1 : 0)">
+            </mat-slide-toggle>
           </div>
-          <mat-slide-toggle
-            color="primary"
-            [checked]="form.controls.diabetes.value === 1"
-            (change)="form.controls.diabetes.setValue($event.checked ? 1 : 0)">
-          </mat-slide-toggle>
         </div>
       </section>
 
@@ -216,36 +219,42 @@
             <mat-label>Total cholesterol</mat-label>
             <input matInput type="number" formControlName="totChol" />
             <span matTextSuffix>mg/dL</span>
+            <mat-hint>Normal: &lt; 200 mg/dL</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Systolic BP</mat-label>
             <input matInput type="number" formControlName="sysBP" />
             <span matTextSuffix>mmHg</span>
+            <mat-hint>Normal: &lt; 120 mmHg</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Diastolic BP</mat-label>
             <input matInput type="number" formControlName="diaBP" />
             <span matTextSuffix>mmHg</span>
+            <mat-hint>Normal: &lt; 80 mmHg</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>BMI</mat-label>
             <input matInput type="number" step="0.1" formControlName="BMI" />
             <span matTextSuffix>kg/m²</span>
+            <mat-hint>Normal: 18.5–24.9</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Resting Heart rate</mat-label>
             <input matInput type="number" formControlName="heartRate" />
             <span matTextSuffix>bpm</span>
+            <mat-hint>Normal: 60–100 bpm</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Fasting Glucose</mat-label>
             <input matInput type="number" formControlName="glucose" />
             <span matTextSuffix>mg/dL</span>
+            <mat-hint>Normal: 70–99 mg/dL</mat-hint>
           </mat-form-field>
         </div>
       </section>
@@ -260,7 +269,7 @@
           </div>
           <div class="intro-flex">
             <div>
-              <h2>STEP 5: ADDITIONAL CARDIAC INVESTIGATIONS (OPTIONAL)</h2>
+              <h2>Additional Cardiac Investigations (Optional)</h2>
               <p>
                 Enhance assessment accuracy with automated ECG report parsing and Treadmill Stress Test (TMT) analysis.
                 Both modules are strictly optional.
@@ -269,11 +278,10 @@
             <button
               type="button"
               mat-stroked-button
-              color="warn"
               class="skip-both-btn"
               (click)="skipBothInvestigations()">
               <mat-icon>fast_forward</mat-icon>
-              Skip Both & Proceed
+              Skip Investigations
             </button>
           </div>
         </div>
@@ -286,9 +294,17 @@
           <div class="investigation-card">
             <div class="inv-card-head">
               <div class="inv-title-area">
-                <span class="inv-badge">OPTIONAL MODULE A</span>
-                <h3>ECG REPORT ANALYSIS</h3>
-                <p>Upload your clinical ECG report in PDF format or enter available ECG measurements.</p>
+                <div class="badge-row">
+                  <span class="inv-badge">MODULE A · OPTIONAL</span>
+                  @if (hasEcgData()) {
+                    <span class="status-pill status-active">
+                      <mat-icon>check_circle</mat-icon>
+                      {{ ecgReportType() === 'single_lead' ? 'Single-Lead Wearable' : '12-Lead Standard ECG' }}
+                    </span>
+                  }
+                </div>
+                <h3>ECG Report Analysis</h3>
+                <p>Upload a clinical ECG PDF report or enter measurements manually. Supports 12-lead and wearable single-lead reports.</p>
               </div>
 
               <div class="mode-switcher">
@@ -309,14 +325,14 @@
               </div>
             </div>
 
-            <!-- MODE A: UPLOAD ECG PDF -->
+            <!-- ECG Upload Zone -->
             @if (ecgMode() === 'upload') {
               <div class="upload-zone">
                 @if (!ecgFileName()) {
                   <label class="drop-target" for="ecg-file-input">
                     <mat-icon class="drop-icon">cloud_upload</mat-icon>
                     <strong>Upload ECG PDF Report</strong>
-                    <span>Click or drag and drop your clinical 12-lead ECG PDF (up to 10MB)</span>
+                    <span>Click or drag and drop a 12-lead ECG or wearable PDF report (WHOOP, Apple Watch, etc. up to 10MB)</span>
                     <input
                       id="ecg-file-input"
                       type="file"
@@ -335,7 +351,7 @@
                           @if (ecgParsing()) {
                             Parsing clinical parameters...
                           } @else if (ecgExtracted()) {
-                            Extraction {{ ecgStatus() }}
+                            Extraction status: {{ ecgStatus() }}
                           } @else {
                             Report selected
                           }
@@ -343,7 +359,7 @@
                       </div>
                     </div>
                     <div class="file-actions">
-                      <button type="button" mat-button color="warn" (click)="clearEcg()">
+                      <button type="button" mat-stroked-button color="warn" (click)="clearEcg()">
                         <mat-icon>delete</mat-icon> Remove
                       </button>
                     </div>
@@ -352,8 +368,82 @@
 
                 @if (ecgParsing()) {
                   <div class="parsing-spinner">
-                    <mat-spinner diameter="28"></mat-spinner>
+                    <mat-spinner diameter="24"></mat-spinner>
                     <span>Extracting heart rate, intervals (PR, QRS, QT/QTc), and rhythm abnormalities…</span>
+                  </div>
+                }
+
+                @if (ecgDocProcessing()?.ocrNotice) {
+                  <div class="ocr-info-notice">
+                    <mat-icon>document_scanner</mat-icon>
+                    <span>{{ ecgDocProcessing()?.ocrNotice }}</span>
+                  </div>
+                }
+
+                @if (ecgExtracted()) {
+                  <div class="extraction-summary-card">
+                    <div class="summary-header">
+                      <div class="summary-status-tag" [class.success]="ecgStatus() === 'success'" [class.partial]="ecgStatus() === 'partial'">
+                        <mat-icon>{{ ecgStatus() === 'success' ? 'check_circle' : 'info' }}</mat-icon>
+                        <span>Extraction: {{ ecgStatus() === 'success' ? 'Complete' : (ecgStatus() === 'partial' ? 'Partial' : 'Empty') }}</span>
+                        <em class="modality-tag">{{ ecgReportType() === 'single_lead' ? 'Single-Lead Wearable' : 'Standard 12-Lead' }}</em>
+                      </div>
+                    </div>
+
+                    <div class="summary-columns">
+                      <div class="summary-col extracted-col">
+                        <div class="col-title"><mat-icon>task_alt</mat-icon> Successfully Extracted</div>
+                        @if (ecgExtractedSummary().length > 0) {
+                          <ul>
+                            @for (item of ecgExtractedSummary(); track item) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        } @else {
+                          <p class="empty-col">None extracted automatically</p>
+                        }
+                      </div>
+
+                      <div class="summary-col review-col">
+                        <div class="col-title"><mat-icon>rate_review</mat-icon> Requires Manual Review</div>
+                        @if (ecgManualReviewSummary().length > 0) {
+                          <span class="col-subtext">Clinical review recommended for repolarization & interpretation</span>
+                          <ul>
+                            @for (item of ecgManualReviewSummary(); track item) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        } @else {
+                          <p class="all-set"><mat-icon>verified</mat-icon> All parameters fiducially verified</p>
+                        }
+                      </div>
+
+                      @if (ecgReportType() === 'single_lead') {
+                        <div class="summary-col unsupported-col">
+                          <div class="col-title"><mat-icon>info_outline</mat-icon> Clinically Unreported on Single-Lead</div>
+                          <span class="col-subtext">Not measured on single-lead hardware (safely kept as null)</span>
+                          <ul>
+                            @for (item of ecgUnsupportedSummary(); track item) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        </div>
+                      } @else {
+                        <div class="summary-col unreported-col">
+                          <div class="col-title"><mat-icon>info_outline</mat-icon> Clinically Unreported on Document</div>
+                          <span class="col-subtext">Parameters not reported on source document (safely kept as null)</span>
+                          @if (ecgMissingSummary().length > 0) {
+                            <ul>
+                              @for (item of ecgMissingSummary(); track item) {
+                                <li>{{ item }}</li>
+                              }
+                            </ul>
+                          } @else {
+                            <p class="all-set"><mat-icon>verified</mat-icon> All standard 12-lead parameters reported</p>
+                          }
+                        </div>
+                      }
+                    </div>
                   </div>
                 }
 
@@ -361,7 +451,7 @@
                   <div class="extraction-warning-box">
                     <mat-icon>warning_amber</mat-icon>
                     <div>
-                      <strong>Extraction Notes & Warnings:</strong>
+                      <strong>Extraction Notes:</strong>
                       <ul>
                         @for (w of ecgWarnings(); track w) {
                           <li>{{ w }}</li>
@@ -373,18 +463,28 @@
               </div>
             }
 
-            <!-- VERIFICATION & MEASUREMENT FORM (Applies to both modes) -->
+            <!-- ECG Form: Report-Oriented Subsections -->
             <div class="verification-area" [formGroup]="ecgForm">
-              <div class="verif-header">
-                <strong>
-                  {{ ecgMode() === 'upload' ? 'Extracted ECG Values (Review & Edit):' : 'Enter Available ECG Measurements:' }}
-                </strong>
-                <span class="verif-hint">Leave unavailable parameters blank — they will not be marked as normal.</span>
+
+              <!-- Subsection 1: Report Information -->
+              <div class="section-divider">
+                <span class="section-divider-title">1. Report Information & Source</span>
               </div>
 
               <div class="fields-grid-3">
                 <mat-form-field appearance="outline">
-                  <mat-label>Heart Rate (bpm)</mat-label>
+                  <mat-label>ECG Device / Source Type</mat-label>
+                  <mat-select
+                    [value]="ecgReportType()"
+                    (selectionChange)="ecgReportType.set($event.value)">
+                    <mat-option value="standard_12_lead">Standard 12-Lead Clinical ECG</mat-option>
+                    <mat-option value="single_lead">Single-Lead Wearable (WHOOP, Apple Watch, etc.)</mat-option>
+                  </mat-select>
+                  <mat-hint>Select recording modality</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Heart Rate</mat-label>
                   <input
                     matInput
                     type="number"
@@ -392,11 +492,74 @@
                     (input)="markFieldEdited('ecg', 'heartRate')"
                   />
                   <span matTextSuffix>bpm</span>
-                  @if (ecgFieldSources()['heartRate']) {
-                    <mat-hint class="source-hint">Source: {{ ecgFieldSources()['heartRate'] }}</mat-hint>
-                  }
+                  <mat-hint>Normal: 60–100 bpm</mat-hint>
                 </mat-form-field>
 
+                <mat-form-field appearance="outline">
+                  <mat-label>Recording Date (Optional)</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    placeholder="e.g. 2026-03-12"
+                    formControlName="recordingDate"
+                    (input)="markFieldEdited('ecg', 'recordingDate')"
+                  />
+                  <mat-hint>Date of recording if noted</mat-hint>
+                </mat-form-field>
+              </div>
+
+              <!-- Subsection 2: Rhythm Interpretation -->
+              <div class="section-divider">
+                <span class="section-divider-title">2. Rhythm Interpretation</span>
+              </div>
+
+              <div class="fields-grid-2">
+                <mat-form-field appearance="outline">
+                  <mat-label>Rhythm Classification</mat-label>
+                  <mat-select formControlName="rhythm" (selectionChange)="markFieldEdited('ecg', 'rhythm')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option value="Normal Sinus Rhythm">Normal Sinus Rhythm</mat-option>
+                    <mat-option value="Sinus Arrhythmia">Sinus Arrhythmia</mat-option>
+                    <mat-option value="Sinus Bradycardia">Sinus Bradycardia (&lt; 60 bpm)</mat-option>
+                    <mat-option value="Sinus Tachycardia">Sinus Tachycardia (&gt; 100 bpm)</mat-option>
+                    <mat-option value="Atrial Fibrillation">Atrial Fibrillation / Flutter</mat-option>
+                    <mat-option value="Ventricular Ectopy">Ventricular Ectopy / PVCs</mat-option>
+                    <mat-option value="Other">Other / Non-diagnostic</mat-option>
+                  </mat-select>
+                  <mat-hint>Underlying cardiac rhythm</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Written Report Diagnosis / Interpretation</mat-label>
+                  <input
+                    matInput
+                    placeholder="e.g. Normal sinus rhythm, no acute ST-T changes"
+                    formControlName="interpretation"
+                    (input)="markFieldEdited('ecg', 'interpretation')"
+                  />
+                  <mat-hint>Physician conclusion from report</mat-hint>
+                </mat-form-field>
+              </div>
+
+              <!-- Subsection 3: ECG Measurements -->
+              <div class="section-divider">
+                <span class="section-divider-title">3. ECG Interval & Waveform Measurements</span>
+              </div>
+
+              @if (ecgReportType() === 'single_lead') {
+                <div class="single-lead-banner">
+                  <mat-icon>info</mat-icon>
+                  <div>
+                    <strong>Single-Lead Wearable Modality Active</strong>
+                    <p>
+                      Single-lead devices (such as WHOOP or Apple Watch) reliably report rhythm and heart rate.
+                      Standard 12-lead intervals below may remain blank and will be marked as <em>Not Reported</em> rather than abnormal.
+                    </p>
+                  </div>
+                </div>
+              }
+
+              <div class="fields-grid-3">
                 <mat-form-field appearance="outline">
                   <mat-label>PR Interval</mat-label>
                   <input
@@ -422,18 +585,7 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>QT Interval (if available)</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    formControlName="qtInterval"
-                    (input)="markFieldEdited('ecg', 'qtInterval')"
-                  />
-                  <span matTextSuffix>ms</span>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>QTc Interval (Bazett/Hodges)</mat-label>
+                  <mat-label>QTc Interval (Bazett / Hodges)</mat-label>
                   <input
                     matInput
                     type="number"
@@ -445,35 +597,39 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
+                  <mat-label>QT Interval (Uncorrected)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="qtInterval"
+                    (input)="markFieldEdited('ecg', 'qtInterval')"
+                  />
+                  <span matTextSuffix>ms</span>
+                  <mat-hint>Leave blank if not reported</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
                   <mat-label>ST-Segment Findings</mat-label>
                   <mat-select formControlName="stFindings" (selectionChange)="markFieldEdited('ecg', 'stFindings')">
-                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="null">Not reported / Normal isoelectric</mat-option>
                     <mat-option value="Normal">Normal isoelectric ST</mat-option>
-                    <mat-option value="ST Depression">ST Depression (Ischemia)</mat-option>
-                    <mat-option value="ST Elevation">ST Elevation (Acute Injury)</mat-option>
+                    <mat-option value="ST Depression">ST Depression (Ischemic)</mat-option>
+                    <mat-option value="ST Elevation">ST Elevation (Acute injury)</mat-option>
                     <mat-option value="Non-specific ST Changes">Non-specific ST changes</mat-option>
                   </mat-select>
+                  <mat-hint>Precordial / limb ST shifts</mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>T-Wave Findings</mat-label>
                   <mat-select formControlName="tWaveFindings" (selectionChange)="markFieldEdited('ecg', 'tWaveFindings')">
-                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="null">Not reported / Normal upright</mat-option>
                     <mat-option value="Normal">Normal upright T-wave</mat-option>
                     <mat-option value="T-Wave Inversion">T-Wave Inversion</mat-option>
                     <mat-option value="Flattened T-Waves">Flattened T-Waves</mat-option>
-                    <mat-option value="Peaked T-Waves">Peaked T-Waves (Hyperkalemia/Ischemia)</mat-option>
+                    <mat-option value="Peaked T-Waves">Peaked T-Waves</mat-option>
                   </mat-select>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="span-2">
-                  <mat-label>Written Report Diagnosis / Interpretation</mat-label>
-                  <input
-                    matInput
-                    placeholder="e.g. Normal sinus rhythm, non-specific intraventricular conduction delay"
-                    formControlName="interpretation"
-                    (input)="markFieldEdited('ecg', 'interpretation')"
-                  />
+                  <mat-hint>Repolarization findings</mat-hint>
                 </mat-form-field>
               </div>
 
@@ -481,7 +637,7 @@
                 <mat-icon>info</mat-icon>
                 <span>
                   <strong>Clinical Notice:</strong> Text extraction parses reported clinical measurements and physician diagnoses.
-                  Raw 12-lead waveform signal processing is a distinct analytical pipeline and is not claimed by textual PDF extraction.
+                  Leave unmeasured parameters blank — missing values will be safely noted as "Not Reported" and never assumed to be pathological.
                 </span>
               </div>
             </div>
@@ -493,9 +649,17 @@
           <div class="investigation-card">
             <div class="inv-card-head">
               <div class="inv-title-area">
-                <span class="inv-badge">OPTIONAL MODULE B</span>
-                <h3>TREADMILL TEST (TMT) ANALYSIS</h3>
-                <p>Upload your exercise stress test report or enter available exercise measurements.</p>
+                <div class="badge-row">
+                  <span class="inv-badge">MODULE B · OPTIONAL</span>
+                  @if (hasTmtData()) {
+                    <span class="status-pill status-active">
+                      <mat-icon>check_circle</mat-icon>
+                      {{ tmtForm.value.protocol || 'Standard Bruce' }}
+                    </span>
+                  }
+                </div>
+                <h3>Treadmill Test (TMT) Analysis</h3>
+                <p>Upload your exercise stress test report or enter hemodynamic and ischemic responses.</p>
               </div>
 
               <div class="mode-switcher">
@@ -516,7 +680,7 @@
               </div>
             </div>
 
-            <!-- MODE A: UPLOAD TMT PDF -->
+            <!-- TMT Upload Zone -->
             @if (tmtMode() === 'upload') {
               <div class="upload-zone">
                 @if (!tmtFileName()) {
@@ -533,16 +697,20 @@
                     />
                   </label>
                 } @else {
-                  <div class="file-chip-card">
+                  <div class="file-chip-card" [class.file-mismatch]="tmtIsMismatch()">
                     <div class="file-info">
-                      <mat-icon class="file-icon">picture_as_pdf</mat-icon>
+                      <mat-icon class="file-icon" [class.mismatch-icon]="tmtIsMismatch()">
+                        {{ tmtIsMismatch() ? 'error_outline' : 'picture_as_pdf' }}
+                      </mat-icon>
                       <div>
                         <strong>{{ tmtFileName() }}</strong>
                         <span class="file-status">
                           @if (tmtParsing()) {
                             Parsing exercise stress parameters...
+                          } @else if (tmtIsMismatch()) {
+                            <span class="mismatch-status-text">Document Mismatch (ECG detected)</span>
                           } @else if (tmtExtracted()) {
-                            Extraction {{ tmtStatus() }}
+                            Extraction status: {{ tmtStatus() }}
                           } @else {
                             Report selected
                           }
@@ -550,7 +718,7 @@
                       </div>
                     </div>
                     <div class="file-actions">
-                      <button type="button" mat-button color="warn" (click)="clearTmt()">
+                      <button type="button" mat-stroked-button color="warn" (click)="clearTmt()">
                         <mat-icon>delete</mat-icon> Remove
                       </button>
                     </div>
@@ -559,16 +727,98 @@
 
                 @if (tmtParsing()) {
                   <div class="parsing-spinner">
-                    <mat-spinner diameter="28"></mat-spinner>
-                    <span>Extracting Duke Treadmill metrics, peak ST depression, and exercise capacity…</span>
+                    <mat-spinner diameter="24"></mat-spinner>
+                    <span>Extracting workload (METs), heart rate, and ST-segment responses…</span>
                   </div>
                 }
 
-                @if (tmtWarnings().length > 0) {
+                <!-- Document Mismatch Alert Box -->
+                @if (tmtIsMismatch()) {
+                  <div class="mismatch-alert-box">
+                    <mat-icon class="mismatch-alert-icon">report_problem</mat-icon>
+                    <div class="mismatch-alert-content">
+                      <strong>Document Type Mismatch</strong>
+                      <p>{{ tmtMismatchMessage() || 'This appears to be an ECG report, not a TMT report. Please upload the correct document.' }}</p>
+                      <span class="mismatch-subtext">ECG measurements will not be applied to the Treadmill Test form. You may remove this file and upload a genuine TMT report, or enter your stress test values manually below.</span>
+                    </div>
+                  </div>
+                }
+
+                @if (tmtDocProcessing()?.ocrNotice) {
+                  <div class="ocr-info-notice">
+                    <mat-icon>document_scanner</mat-icon>
+                    <span>{{ tmtDocProcessing()?.ocrNotice }}</span>
+                  </div>
+                }
+
+                <!-- TMT Extraction Summary: Extracted, Manual Review, and Unreported -->
+                @if (tmtExtracted() && !tmtIsMismatch()) {
+                  <div class="extraction-summary-card">
+                    <div class="summary-header">
+                      @if (tmtDocProcessing()) {
+                        <div class="doc-proc-pill" [class.ocr-pill]="tmtDocProcessing()?.ocrApplied">
+                          <mat-icon>{{ tmtDocProcessing()?.ocrApplied ? 'document_scanner' : 'picture_as_pdf' }}</mat-icon>
+                          <span>{{ tmtDocProcessing()?.statusText }}</span>
+                        </div>
+                      }
+                      <div class="clinical-extract-pill" [class.success]="tmtStatus() === 'success'" [class.partial]="tmtStatus() === 'partial'">
+                        <mat-icon>{{ tmtStatus() === 'success' ? 'verified' : 'fact_check' }}</mat-icon>
+                        <span>{{ tmtClinicalStatusText() || ('Clinical Extraction: ' + (tmtStatus() === 'success' ? 'Complete' : 'Partial')) }}</span>
+                      </div>
+                    </div>
+
+                    <div class="summary-columns">
+                      <div class="summary-col extracted-col">
+                        <div class="col-title"><mat-icon>task_alt</mat-icon> Successfully Extracted ({{ tmtExtractedSummary().length }})</div>
+                        @if (tmtExtractedSummary().length > 0) {
+                          <ul>
+                            @for (item of tmtExtractedSummary(); track item) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        } @else {
+                          <p class="empty-col">None extracted automatically</p>
+                        }
+                      </div>
+
+                      <div class="summary-col review-col">
+                        <div class="col-title"><mat-icon>rate_review</mat-icon> Requires Manual Review</div>
+                        @if (tmtManualReviewSummary().length > 0 || tmtManualSummary().length > 0) {
+                          <ul>
+                            @for (item of tmtManualReviewSummary(); track item) {
+                              <li>{{ item }}</li>
+                            }
+                            @for (item of tmtManualSummary(); track item) {
+                              <li>{{ item }} (Manually edited)</li>
+                            }
+                          </ul>
+                        } @else {
+                          <p class="all-set"><mat-icon>verified</mat-icon> All parameters fiducially verified</p>
+                        }
+                      </div>
+
+                      <div class="summary-col unreported-col">
+                        <div class="col-title"><mat-icon>info_outline</mat-icon> Clinically Unreported on Document</div>
+                        <span class="col-subtext">Parameters not measured/reported on document (safely kept as null)</span>
+                        @if (tmtMissingSummary().length > 0) {
+                          <ul>
+                            @for (item of tmtMissingSummary(); track item) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        } @else {
+                          <p class="all-set"><mat-icon>verified</mat-icon> All expected clinical parameters reported</p>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (!tmtIsMismatch() && tmtWarnings().length > 0) {
                   <div class="extraction-warning-box">
                     <mat-icon>warning_amber</mat-icon>
                     <div>
-                      <strong>Extraction Notes & Warnings:</strong>
+                      <strong>Extraction Notes:</strong>
                       <ul>
                         @for (w of tmtWarnings(); track w) {
                           <li>{{ w }}</li>
@@ -580,74 +830,42 @@
               </div>
             }
 
-            <!-- VERIFICATION & MEASUREMENT FORM (Applies to both modes) -->
+            <!-- TMT Form: Stress-Test Structured Subsections -->
             <div class="verification-area" [formGroup]="tmtForm">
-              <div class="verif-header">
-                <strong>
-                  {{ tmtMode() === 'upload' ? 'Extracted TMT Values (Review & Edit):' : 'Enter Available Exercise Measurements:' }}
-                </strong>
-                <span class="verif-hint">Missing values are handled appropriately and never silently populated with normal numbers.</span>
+
+              <!-- Subsection 1: Test Information -->
+              <div class="section-divider">
+                <span class="section-divider-title">1. Test Protocol & Workload</span>
               </div>
 
               <div class="fields-grid-3">
                 <mat-form-field appearance="outline">
-                  <mat-label>Exercise-Induced Angina</mat-label>
-                  <mat-select formControlName="exang" (selectionChange)="markFieldEdited('tmt', 'exang')">
-                    <mat-option [value]="null">Not specified / Not available</mat-option>
-                    <mat-option [value]="0">No angina during exercise</mat-option>
-                    <mat-option [value]="1">Yes, angina induced during exercise</mat-option>
+                  <mat-label>Exercise Protocol @if (tmtFieldPages()['protocol']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['protocol'] }}</span> }</mat-label>
+                  <mat-select formControlName="protocol" (selectionChange)="markFieldEdited('tmt', 'protocol')">
+                    <mat-option value="Standard Bruce">Standard Bruce Protocol</mat-option>
+                    <mat-option value="Modified Bruce">Modified Bruce Protocol</mat-option>
+                    <mat-option value="Naughton">Naughton Protocol</mat-option>
+                    <mat-option value="Balke">Balke Protocol</mat-option>
+                    <mat-option value="Other">Other Protocol</mat-option>
                   </mat-select>
-                  <mat-hint>UCI / clinical feature: exang</mat-hint>
+                  <mat-hint>Treadmill exercise protocol</mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>ST Depression (oldpeak)</mat-label>
+                  <mat-label>Exercise Duration @if (tmtFieldPages()['durationMinutes'] || tmtFieldPages()['durationFormatted']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['durationMinutes'] || tmtFieldPages()['durationFormatted'] }}</span> }</mat-label>
                   <input
                     matInput
-                    type="number"
-                    step="0.1"
-                    formControlName="oldpeak"
-                    (input)="markFieldEdited('tmt', 'oldpeak')"
+                    type="text"
+                    formControlName="durationFormatted"
+                    (input)="onDurationFormattedChange($event)"
+                    placeholder="09:02"
                   />
-                  <span matTextSuffix>mm</span>
-                  <mat-hint>Exercise vs resting depression</mat-hint>
+                  <span matTextSuffix>min:s</span>
+                  <mat-hint>Total exercise duration (e.g. 09:02)</mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
-                  <mat-label>Peak ST Segment Slope</mat-label>
-                  <mat-select formControlName="slope" (selectionChange)="markFieldEdited('tmt', 'slope')">
-                    <mat-option [value]="null">Not specified / Not available</mat-option>
-                    <mat-option [value]="1">1 - Upsloping (Low risk)</mat-option>
-                    <mat-option [value]="2">2 - Flat / Horizontal (Moderate/High)</mat-option>
-                    <mat-option [value]="3">3 - Downsloping (High ischemic risk)</mat-option>
-                  </mat-select>
-                  <mat-hint>UCI slope feature</mat-hint>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>Max Heart Rate Achieved (thalach)</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    formControlName="thalach"
-                    (input)="markFieldEdited('tmt', 'thalach')"
-                  />
-                  <span matTextSuffix>bpm</span>
-                  <mat-hint>Peak exertion heart rate</mat-hint>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>Resting ECG Finding (restecg)</mat-label>
-                  <mat-select formControlName="restecg" (selectionChange)="markFieldEdited('tmt', 'restecg')">
-                    <mat-option [value]="null">Not specified / Not available</mat-option>
-                    <mat-option [value]="0">0 - Normal</mat-option>
-                    <mat-option [value]="1">1 - ST-T wave abnormality</mat-option>
-                    <mat-option [value]="2">2 - Left ventricular hypertrophy (LVH)</mat-option>
-                  </mat-select>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>METs Achieved</mat-label>
+                  <mat-label>Workload Achieved (METs) @if (tmtFieldPages()['mets']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['mets'] }}</span> }</mat-label>
                   <input
                     matInput
                     type="number"
@@ -656,39 +874,171 @@
                     (input)="markFieldEdited('tmt', 'mets')"
                   />
                   <span matTextSuffix>METs</span>
-                  <mat-hint>&gt; 10 METs = excellent prognosis</mat-hint>
+                  <mat-hint>&ge; 10 METs = excellent prognosis</mat-hint>
                 </mat-form-field>
+              </div>
 
+              <!-- Subsection 2: Heart Rate & Hemodynamics -->
+              <div class="section-divider">
+                <div class="section-title-with-badge">
+                  <span class="section-divider-title">2. Heart Rate & Hemodynamics</span>
+                  @if (tmtForm.value.thalach && predictedPercentMaxHR()) {
+                    <span class="live-calc-badge">
+                      Peak HR: {{ predictedPercentMaxHR() }}% of predicted max ({{ maxPredictedHR() }} bpm)
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="fields-grid-2">
                 <mat-form-field appearance="outline">
-                  <mat-label>Exercise Duration</mat-label>
+                  <mat-label>Resting HR @if (tmtFieldPages()['restingHR']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['restingHR'] }}</span> }</mat-label>
                   <input
                     matInput
                     type="number"
-                    step="0.5"
-                    formControlName="durationMinutes"
-                    (input)="markFieldEdited('tmt', 'durationMinutes')"
+                    formControlName="restingHR"
+                    (input)="markFieldEdited('tmt', 'restingHR')"
                   />
-                  <span matTextSuffix>minutes</span>
-                  <mat-hint>Used for Duke Treadmill Score</mat-hint>
+                  <span matTextSuffix>bpm</span>
+                  <mat-hint>Pre-test resting rate</mat-hint>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" class="span-2">
-                  <mat-label>Reported Exercise Conclusion / Diagnosis</mat-label>
+                <mat-form-field appearance="outline">
+                  <mat-label>Max Heart Rate (thalach) @if (tmtFieldPages()['thalach']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['thalach'] }}</span> }</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="thalach"
+                    (input)="markFieldEdited('tmt', 'thalach')"
+                  />
+                  <span matTextSuffix>bpm</span>
+                  <mat-hint>Peak exertion HR</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Resting BP @if (tmtFieldPages()['restingBP']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['restingBP'] }}</span> }</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    placeholder="e.g. 120/80"
+                    formControlName="restingBP"
+                    (input)="markFieldEdited('tmt', 'restingBP')"
+                  />
+                  <span matTextSuffix>mmHg</span>
+                  <mat-hint>Pre-exercise reading</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Peak Exercise BP @if (tmtFieldPages()['peakBP']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['peakBP'] }}</span> }</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    placeholder="e.g. 175/85"
+                    formControlName="peakBP"
+                    (input)="markFieldEdited('tmt', 'peakBP')"
+                  />
+                  <span matTextSuffix>mmHg</span>
+                  <mat-hint>Max workload reading</mat-hint>
+                </mat-form-field>
+              </div>
+
+              <!-- Subsection 3: Ischemic Response -->
+              <div class="section-divider">
+                <span class="section-divider-title">3. Ischemic & ST-Segment Response</span>
+              </div>
+
+              <div class="fields-grid-2">
+                <mat-form-field appearance="outline">
+                  <mat-label>ST Depression (oldpeak) @if (tmtFieldPages()['oldpeak']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['oldpeak'] }}</span> }</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    step="0.1"
+                    formControlName="oldpeak"
+                    (input)="markFieldEdited('tmt', 'oldpeak')"
+                  />
+                  <span matTextSuffix>mm</span>
+                  <mat-hint>Exercise-induced depression</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Peak ST Segment Slope @if (tmtFieldPages()['slope']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['slope'] }}</span> }</mat-label>
+                  <mat-select formControlName="slope" (selectionChange)="markFieldEdited('tmt', 'slope')">
+                    <mat-option [value]="null">Not reported / Normal</mat-option>
+                    <mat-option [value]="1">1 - Upsloping (Low risk)</mat-option>
+                    <mat-option [value]="2">2 - Flat / Horizontal (Moderate risk)</mat-option>
+                    <mat-option [value]="3">3 - Downsloping (High ischemic risk)</mat-option>
+                  </mat-select>
+                  <mat-hint>ST trajectory</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Exercise Angina (exang) @if (tmtFieldPages()['exang']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['exang'] }}</span> }</mat-label>
+                  <mat-select formControlName="exang" (selectionChange)="markFieldEdited('tmt', 'exang')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="0">No angina during exercise</mat-option>
+                    <mat-option [value]="1">Yes, angina induced during exercise</mat-option>
+                  </mat-select>
+                  <mat-hint>Chest discomfort induced</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Resting ECG Finding (restecg) @if (tmtFieldPages()['restecg']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['restecg'] }}</span> }</mat-label>
+                  <mat-select formControlName="restecg" (selectionChange)="markFieldEdited('tmt', 'restecg')">
+                    <mat-option [value]="null">Not specified / Not available</mat-option>
+                    <mat-option [value]="0">0 - Normal baseline</mat-option>
+                    <mat-option [value]="1">1 - ST-T wave abnormality</mat-option>
+                    <mat-option [value]="2">2 - Left ventricular hypertrophy (LVH)</mat-option>
+                  </mat-select>
+                  <mat-hint>Pre-test baseline ECG</mat-hint>
+                </mat-form-field>
+              </div>
+
+              <!-- Subsection 4: Final Interpretation -->
+              <div class="section-divider">
+                <div class="section-title-with-badge">
+                  <span class="section-divider-title">4. Interpretation & Duke Treadmill Score</span>
+                  @if (dukeTreadmillScorePreview() !== null) {
+                    <span class="live-calc-badge dts-badge">
+                      Duke Score: {{ dukeTreadmillScorePreview() }} · {{ dukeRiskCategory() }}
+                    </span>
+                  } @else if (tmtExtracted() && !tmtDtsReported()) {
+                    <span class="live-calc-badge dts-badge not-reported">
+                      DTS: Not reported on document
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="fields-grid-2">
+                <mat-form-field appearance="outline">
+                  <mat-label>Stress Test Overall Conclusion @if (tmtFieldPages()['tmtResult']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['tmtResult'] }}</span> }</mat-label>
+                  <mat-select formControlName="tmtResult" (selectionChange)="markFieldEdited('tmt', 'tmtResult')">
+                    <mat-option [value]="null">Not specified / Clinical review pending</mat-option>
+                    <mat-option value="Negative for inducible ischemia">Negative for inducible ischemia</mat-option>
+                    <mat-option value="Positive for inducible ischemia">Positive for inducible ischemia</mat-option>
+                    <mat-option value="Inconclusive / Submaximal">Inconclusive / Submaximal effort</mat-option>
+                  </mat-select>
+                  <mat-hint>Diagnostic interpretation</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Reported Exercise Conclusion / Diagnosis @if (tmtFieldPages()['conclusion']) { <span class="page-ref-badge">p. {{ tmtFieldPages()['conclusion'] }}</span> }</mat-label>
                   <input
                     matInput
                     placeholder="e.g. Negative for inducible ischemia at 87% MPHR"
                     formControlName="reportedConclusion"
                     (input)="markFieldEdited('tmt', 'reportedConclusion')"
                   />
+                  <mat-hint>Summary from clinical document</mat-hint>
                 </mat-form-field>
               </div>
 
               <div class="technical-notice">
                 <mat-icon>info</mat-icon>
                 <span>
-                  <strong>ML Dataset Notice:</strong> TMT analysis utilizes the Duke Treadmill Score and a machine learning
-                  pipeline trained on the genuine UCI Heart Disease clinical dataset (evaluating angiographic CAD / inducible ischemia,
-                  distinct from Framingham 10-year CHD risk).
+                  <strong>Clinical Notice:</strong> Exercise stress testing informs the Duke Treadmill Score and provides
+                  evidence on inducible myocardial ischemia, complementing the 10-year Framingham coronary risk calculation.
                 </span>
               </div>
             </div>
@@ -700,142 +1050,368 @@
       <!-- ========================================================= -->
       <!-- STEP 6: Review Information -->
       <!-- ========================================================= -->
-      <section *ngSwitchCase="6" class="step-body">
+      <section *ngSwitchCase="6" class="step-body review-step-body">
         <div class="step-intro">
           <div class="step-intro-icon">
             <mat-icon>fact_check</mat-icon>
           </div>
           <div>
-            <h2>Review Information</h2>
-            <p>Confirm the details before running the predictive engines.</p>
+            <h2>Review Clinical Information</h2>
+            <p>Confirm the details across all clinical modules before generating the cardiovascular risk profile.</p>
           </div>
         </div>
 
-        <div class="review-grid">
-          <!-- Personal -->
-          <div class="review-group">
-            <h3><mat-icon>person</mat-icon> Personal</h3>
-            <ul>
-              <li>
-                <span>Age</span>
-                <strong>{{ form.controls.age.value }} yrs</strong>
-              </li>
-              <li>
-                <span>Sex</span>
-                <strong>{{ form.controls.male.value === 1 ? 'Male' : 'Female' }}</strong>
-              </li>
-              <li>
-                <span>Education</span>
-                <strong>Level {{ form.controls.education.value }}</strong>
-              </li>
-            </ul>
-          </div>
+        <div class="review-layout">
 
-          <!-- Smoking -->
-          <div class="review-group">
-            <h3><mat-icon>smoking_rooms</mat-icon> Lifestyle</h3>
-            <ul>
-              <li>
-                <span>Current smoker</span>
-                <strong>{{ form.controls.currentSmoker.value === 1 ? 'Yes' : 'No' }}</strong>
-              </li>
-              <li>
-                <span>Cigarettes/day</span>
-                <strong>{{ form.controls.cigsPerDay.value }}</strong>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Medical History -->
-          <div class="review-group">
-            <h3><mat-icon>medical_services</mat-icon> Medical History</h3>
-            <ul>
-              <li>
-                <span>BP medication</span>
-                <strong>{{ form.controls.BPMeds.value ? 'Yes' : 'No' }}</strong>
-              </li>
-              <li>
-                <span>Previous stroke</span>
-                <strong>{{ form.controls.prevalentStroke.value ? 'Yes' : 'No' }}</strong>
-              </li>
-              <li>
-                <span>Hypertension</span>
-                <strong>{{ form.controls.prevalentHyp.value ? 'Yes' : 'No' }}</strong>
-              </li>
-              <li>
-                <span>Diabetes</span>
-                <strong>{{ form.controls.diabetes.value ? 'Yes' : 'No' }}</strong>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Clinical -->
-          <div class="review-group">
-            <h3><mat-icon>monitor_heart</mat-icon> Clinical Measurements</h3>
-            <ul>
-              <li>
-                <span>Total cholesterol</span>
-                <strong>{{ form.controls.totChol.value }} mg/dL</strong>
-              </li>
-              <li>
-                <span>Blood pressure</span>
-                <strong>{{ form.controls.sysBP.value }} / {{ form.controls.diaBP.value }} mmHg</strong>
-              </li>
-              <li>
-                <span>BMI</span>
-                <strong>{{ form.controls.BMI.value }} kg/m²</strong>
-              </li>
-              <li>
-                <span>Heart rate</span>
-                <strong>{{ form.controls.heartRate.value }} bpm</strong>
-              </li>
-              <li>
-                <span>Glucose</span>
-                <strong>{{ form.controls.glucose.value }} mg/dL</strong>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Investigations Summary -->
-          <div class="review-group span-2">
-            <h3><mat-icon>biotech</mat-icon> Additional Investigations (Optional)</h3>
-            <ul>
-              <li>
-                <span>ECG Investigation</span>
-                <strong>
-                  @if (hasEcgData()) {
-                    <span class="status-provided">Provided (HR: {{ ecgForm.value.heartRate || 'N/A' }} bpm, ST: {{ ecgForm.value.stFindings }})</span>
+          <!-- 1. Demographics & Lifestyle -->
+          <div class="review-card">
+            <div class="review-card-header">
+              <div class="header-title">
+                <mat-icon>person</mat-icon>
+                <h3>1. Personal & Lifestyle</h3>
+              </div>
+              <button type="button" class="edit-step-btn" (click)="goToStep(1)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+            </div>
+            <div class="review-table">
+              <div class="review-row">
+                <span class="label">Age</span>
+                <span class="val">{{ form.controls.age.value }} years</span>
+              </div>
+              <div class="review-row">
+                <span class="label">Biological Sex</span>
+                <span class="val">{{ form.controls.male.value === 1 ? 'Male' : 'Female' }}</span>
+              </div>
+              <div class="review-row">
+                <span class="label">Education Level</span>
+                <span class="val">{{ getEducationLabel(form.controls.education.value) }}</span>
+              </div>
+              <div class="review-row">
+                <span class="label">Smoking Status</span>
+                <span class="val">
+                  @if (form.controls.currentSmoker.value === 1) {
+                    Smoker ({{ form.controls.cigsPerDay.value }} cigs/day)
                   } @else {
-                    <span class="status-skipped">Skipped / Not provided</span>
+                    Non-smoker
                   }
-                </strong>
-              </li>
-              <li>
-                <span>TMT Investigation</span>
-                <strong>
-                  @if (hasTmtData()) {
-                    <span class="status-provided">Provided (Max HR: {{ tmtForm.value.thalach || 'N/A' }} bpm, ST Dep: {{ tmtForm.value.oldpeak || 0 }} mm)</span>
-                  } @else {
-                    <span class="status-skipped">Skipped / Not provided</span>
-                  }
-                </strong>
-              </li>
-            </ul>
+                </span>
+              </div>
+            </div>
           </div>
+
+          <!-- 2. Medical History -->
+          <div class="review-card">
+            <div class="review-card-header">
+              <div class="header-title">
+                <mat-icon>medical_services</mat-icon>
+                <h3>2. Medical History</h3>
+              </div>
+              <button type="button" class="edit-step-btn" (click)="goToStep(3)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+            </div>
+            <div class="review-table">
+              <div class="review-row">
+                <span class="label">BP Medication</span>
+                <span class="val">{{ form.controls.BPMeds.value === 1 ? 'Prescribed / Active' : 'None' }}</span>
+              </div>
+              <div class="review-row">
+                <span class="label">Previous Stroke / TIA</span>
+                <span class="val">{{ form.controls.prevalentStroke.value === 1 ? 'History Present' : 'No History' }}</span>
+              </div>
+              <div class="review-row">
+                <span class="label">Hypertension</span>
+                <span class="val">{{ form.controls.prevalentHyp.value === 1 ? 'Diagnosed' : 'Not Diagnosed' }}</span>
+              </div>
+              <div class="review-row">
+                <span class="label">Diabetes Mellitus</span>
+                <span class="val">{{ form.controls.diabetes.value === 1 ? 'Diagnosed' : 'None' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Resting Clinical Measurements (Full Width) -->
+          <div class="review-card span-full">
+            <div class="review-card-header">
+              <div class="header-title">
+                <mat-icon>monitor_heart</mat-icon>
+                <h3>3. Resting Clinical Measurements</h3>
+              </div>
+              <button type="button" class="edit-step-btn" (click)="goToStep(4)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+            </div>
+            <div class="review-metrics-grid">
+              <div class="metric-cell">
+                <span class="metric-label">Blood Pressure</span>
+                <span class="metric-value highlight">{{ form.controls.sysBP.value }} / {{ form.controls.diaBP.value }} <small>mmHg</small></span>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Total Cholesterol</span>
+                <span class="metric-value">{{ form.controls.totChol.value }} <small>mg/dL</small></span>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Resting Heart Rate</span>
+                <span class="metric-value">{{ form.controls.heartRate.value }} <small>bpm</small></span>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Body Mass Index (BMI)</span>
+                <span class="metric-value">{{ form.controls.BMI.value }} <small>kg/m²</small></span>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Fasting Glucose</span>
+                <span class="metric-value">{{ form.controls.glucose.value }} <small>mg/dL</small></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. ECG Investigation Summary -->
+          <div class="review-card">
+            <div class="review-card-header">
+              <div class="header-title">
+                <mat-icon>biotech</mat-icon>
+                <h3>4. ECG Investigation</h3>
+              </div>
+              <button type="button" class="edit-step-btn" (click)="goToStep(5)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+            </div>
+            @if (hasEcgData()) {
+              <div class="review-badge-strip">
+                <span class="status-pill status-active">
+                  <mat-icon>check_circle</mat-icon>
+                  {{ ecgReportType() === 'single_lead' ? 'Single-Lead Wearable' : '12-Lead Standard ECG' }}
+                </span>
+                @if (ecgFileName()) {
+                  <span class="filename-pill" title="{{ ecgFileName() }}">
+                    <mat-icon>description</mat-icon>
+                    {{ ecgFileName() }}
+                  </span>
+                }
+              </div>
+              <div class="review-table">
+                <div class="review-row">
+                  <span class="label">Heart Rate</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.heartRate">{{ ecgForm.value.heartRate ? ecgForm.value.heartRate + ' bpm' : 'Not Reported' }}</span>
+                </div>
+                @if (ecgForm.value.recordingDate) {
+                  <div class="review-row">
+                    <span class="label">Recording Date</span>
+                    <span class="val">{{ ecgForm.value.recordingDate }}</span>
+                  </div>
+                }
+                <div class="review-row">
+                  <span class="label">Rhythm</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.rhythm">{{ ecgForm.value.rhythm || 'Not Reported' }}</span>
+                </div>
+                <div class="review-row">
+                  <span class="label">PR Interval</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.prInterval">
+                    {{ ecgForm.value.prInterval ? ecgForm.value.prInterval + ' ms' : (ecgReportType() === 'single_lead' ? 'Not Reported (Single Lead)' : 'Not Reported') }}
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">QRS Duration</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.qrsDuration">
+                    {{ ecgForm.value.qrsDuration ? ecgForm.value.qrsDuration + ' ms' : (ecgReportType() === 'single_lead' ? 'Not Reported (Single Lead)' : 'Not Reported') }}
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">QTc Interval</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.qtcInterval">
+                    {{ ecgForm.value.qtcInterval ? ecgForm.value.qtcInterval + ' ms' : (ecgReportType() === 'single_lead' ? 'Not Reported (Single Lead)' : 'Not Reported') }}
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">ST Findings</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.stFindings">
+                    {{ ecgForm.value.stFindings || (ecgReportType() === 'single_lead' ? 'Not Reported (Single Lead)' : 'Not Reported / Normal') }}
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">T-Wave Findings</span>
+                  <span class="val" [class.muted-val]="!ecgForm.value.tWaveFindings">
+                    {{ ecgForm.value.tWaveFindings || (ecgReportType() === 'single_lead' ? 'Not Reported (Single Lead)' : 'Not Reported / Normal') }}
+                  </span>
+                </div>
+                @if (ecgForm.value.interpretation) {
+                  <div class="review-row conclusion-row">
+                    <span class="label">Diagnosis / Notes</span>
+                    <span class="val text-quote">"{{ ecgForm.value.interpretation }}"</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="review-skipped-state">
+                <mat-icon>remove_circle_outline</mat-icon>
+                <div>
+                  <strong>ECG Investigation Skipped</strong>
+                  <span>Assessment will proceed using Framingham clinical model.</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- 5. TMT Investigation Summary -->
+          <div class="review-card">
+            <div class="review-card-header">
+              <div class="header-title">
+                <mat-icon>directions_run</mat-icon>
+                <h3>5. TMT Exercise Stress Test</h3>
+              </div>
+              <button type="button" class="edit-step-btn" (click)="goToStep(5)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+            </div>
+            @if (hasTmtData()) {
+              <div class="review-badge-strip">
+                <span class="status-pill status-active">
+                  <mat-icon>check_circle</mat-icon>
+                  {{ tmtForm.value.protocol || 'Standard Bruce' }}
+                </span>
+                @if (tmtFileName()) {
+                  <span class="filename-pill" title="{{ tmtFileName() }}">
+                    <mat-icon>description</mat-icon>
+                    {{ tmtFileName() }}
+                  </span>
+                }
+              </div>
+              <div class="review-table">
+                <div class="review-row">
+                  <span class="label">Duration & Workload</span>
+                  <span class="val">
+                    {{ tmtForm.value.durationFormatted || (tmtForm.value.durationMinutes ? tmtForm.value.durationMinutes + ' min' : 'Not Reported') }}
+                    @if (tmtFieldPages()['durationMinutes'] || tmtFieldPages()['durationFormatted']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['durationMinutes'] || tmtFieldPages()['durationFormatted'] }}</span>
+                    }
+                    {{ tmtForm.value.mets ? ' · ' + tmtForm.value.mets + ' METs' : '' }}
+                    @if (tmtForm.value.mets && tmtFieldPages()['mets']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['mets'] }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">Resting ECG Finding</span>
+                  <span class="val">
+                    {{ getRestecgLabel(tmtForm.value.restecg) }}
+                    @if (tmtFieldPages()['restecg']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['restecg'] }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">Blood Pressure Response</span>
+                  <span class="val">
+                    {{ tmtForm.value.restingBP ? tmtForm.value.restingBP + ' mmHg (Rest)' : '' }}
+                    @if (tmtForm.value.restingBP && tmtFieldPages()['restingBP']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['restingBP'] }}</span>
+                    }
+                    {{ tmtForm.value.peakBP ? (tmtForm.value.restingBP ? ' → ' : '') + tmtForm.value.peakBP + ' mmHg (Peak)' : (tmtForm.value.restingBP ? '' : 'Not Reported') }}
+                    @if (tmtForm.value.peakBP && tmtFieldPages()['peakBP']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['peakBP'] }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">Max Heart Rate</span>
+                  <span class="val">
+                    {{ tmtForm.value.thalach ? tmtForm.value.thalach + ' bpm' : 'Not Reported' }}
+                    @if (tmtForm.value.thalach && tmtFieldPages()['thalach']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['thalach'] }}</span>
+                    }
+                    @if (tmtForm.value.thalach && predictedPercentMaxHR()) {
+                      <span class="percent-tag">({{ predictedPercentMaxHR() }}% max)</span>
+                    }
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">Exercise Angina</span>
+                  <span class="val">
+                    {{ tmtForm.value.exang === 1 ? 'Yes (Induced)' : (tmtForm.value.exang === 0 ? 'No Angina' : 'Not Reported') }}
+                    @if (tmtForm.value.exang !== null && tmtFieldPages()['exang']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['exang'] }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">ST Depression</span>
+                  <span class="val">
+                    {{ tmtForm.value.oldpeak !== null ? tmtForm.value.oldpeak + ' mm' : 'Not Reported' }}
+                    @if (tmtForm.value.oldpeak !== null && tmtFieldPages()['oldpeak']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['oldpeak'] }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="review-row">
+                  <span class="label">Peak ST Slope</span>
+                  <span class="val">
+                    {{ getSlopeLabel(tmtForm.value.slope) }}
+                    @if (tmtForm.value.slope !== null && tmtFieldPages()['slope']) {
+                      <span class="page-ref-badge">p. {{ tmtFieldPages()['slope'] }}</span>
+                    }
+                  </span>
+                </div>
+                @if (dukeTreadmillScorePreview() !== null) {
+                  <div class="review-row">
+                    <span class="label">Duke Treadmill Score</span>
+                    <span class="val score-val">{{ dukeTreadmillScorePreview() }} ({{ dukeRiskCategory() }})</span>
+                  </div>
+                } @else if (tmtExtracted() && !tmtDtsReported()) {
+                  <div class="review-row">
+                    <span class="label">Duke Treadmill Score</span>
+                    <span class="val text-muted">Not reported (Not calculated on report)</span>
+                  </div>
+                }
+                @if (tmtForm.value.tmtResult) {
+                  <div class="review-row">
+                    <span class="label">Diagnostic Conclusion</span>
+                    <span class="val font-semibold">
+                      {{ tmtForm.value.tmtResult }}
+                      @if (tmtFieldPages()['tmtResult']) {
+                        <span class="page-ref-badge">p. {{ tmtFieldPages()['tmtResult'] }}</span>
+                      }
+                    </span>
+                  </div>
+                }
+                @if (tmtForm.value.reportedConclusion) {
+                  <div class="review-row conclusion-row">
+                    <span class="label">Physician Notes</span>
+                    <span class="val text-quote">"{{ tmtForm.value.reportedConclusion }}"</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="review-skipped-state">
+                <mat-icon>remove_circle_outline</mat-icon>
+                <div>
+                  <strong>TMT Investigation Skipped</strong>
+                  <span>Assessment will proceed without exercise stress indicators.</span>
+                </div>
+              </div>
+            }
+          </div>
+
         </div>
       </section>
 
     </div>
 
-    <!-- NAVIGATION -->
+    <!-- NAVIGATION (Inside normal card container flow) -->
     <div class="form-nav">
       <button
         type="button"
         mat-stroked-button
+        class="nav-btn-back"
         (click)="back()"
         [disabled]="isFirstStep()">
         <mat-icon>arrow_back</mat-icon>
-        Back
+        <span>Back</span>
       </button>
 
       @if (!isLastStep()) {
@@ -843,8 +1419,9 @@
           type="button"
           mat-flat-button
           color="primary"
+          class="nav-btn-next"
           (click)="next()">
-          Continue
+          <span>Continue</span>
           <mat-icon>arrow_forward</mat-icon>
         </button>
       } @else {
@@ -852,16 +1429,10 @@
           type="submit"
           mat-flat-button
           color="primary"
-          class="predict-btn"
+          class="nav-btn-submit"
           [disabled]="submitting()">
-          @if (submitting()) {
-            Analyzing...
-          } @else {
-            <ng-container>
-              <mat-icon>favorite</mat-icon>
-              <span>Run Assessment</span>
-            </ng-container>
-          }
+          <mat-icon *ngIf="!submitting()">favorite</mat-icon>
+          <span>{{ submitting() ? 'Analyzing Risk Profile...' : 'Run Assessment' }}</span>
         </button>
       }
     </div>

@@ -14,8 +14,8 @@ export interface User {
   avatarColor: string;
   gender: 'male' | 'female' | 'other';
   dateOfBirth: string;
-  heightCm: number;
-  weightKg: number;
+  heightCm: number | null;
+  weightKg: number | null;
   bloodGroup: string;
   allergies: string[];
   medications: string[];

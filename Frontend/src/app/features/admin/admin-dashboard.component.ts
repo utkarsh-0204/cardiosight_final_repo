@@ -1,9 +1,9 @@
 // =============================================================================
-// Admin dashboard – platform KPIs, risk distribution and activity feed.
+// Admin dashboard – platform KPIs, risk distribution, trends & activity feed.
 // =============================================================================
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
@@ -20,6 +20,7 @@ import type { AdminActivity, AdminStats } from '../../core/models/analytics.mode
   imports: [
     RouterLink,
     DatePipe,
+    DecimalPipe,
     MatIconModule,
     MatButtonModule,
     StatCardComponent,
@@ -36,13 +37,40 @@ export class AdminDashboardComponent implements OnInit {
 
   readonly riskDistribution = computed(() => {
     const s = this.stats();
-    if (!s) return { labels: [], values: [] };
+    if (!s) return { labels: [], values: [], colors: [] };
+    if (s.riskDistribution && s.riskDistribution.length > 0) {
+      return {
+        labels: s.riskDistribution.map((d) => d.label),
+        values: s.riskDistribution.map((d) => d.value),
+        colors: s.riskDistribution.map((d) => d.color),
+      };
+    }
     const high = s.highRiskPredictions;
     const low = Math.max(0, s.totalPredictions - high - Math.round(s.avgRiskScore * 0.2));
     const medium = Math.max(0, s.totalPredictions - high - low);
     return {
-      labels: ['Low', 'Medium', 'High'],
+      labels: ['Low risk', 'Medium risk', 'High risk'],
       values: [low, medium, high],
+      colors: ['#43A047', '#F9A825', '#E53935'],
+    };
+  });
+
+  readonly monthly = computed(() => {
+    const s = this.stats();
+    const pts = s?.monthlyPredictions ?? [];
+    return {
+      labels: pts.map((p) => p.month),
+      predictions: pts.map((p) => p.predictions),
+      highRisk: pts.map((p) => p.highRisk),
+    };
+  });
+
+  readonly genderDistribution = computed(() => {
+    const s = this.stats();
+    const g = s?.genderDistribution ?? [];
+    return {
+      labels: g.map((item) => item.label),
+      values: g.map((item) => item.value),
     };
   });
 

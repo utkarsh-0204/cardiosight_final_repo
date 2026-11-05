@@ -3,6 +3,7 @@
 // =============================================================================
 import { Routes } from '@angular/router';
 import { adminGuard } from '../core/guards/admin.guard';
+import { patientOnlyGuard } from '../core/guards/patient.guard';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -12,6 +13,7 @@ export const appRoutes: Routes = [
   },
   {
     path: 'predict',
+    canActivate: [patientOnlyGuard],
     loadComponent: () => import('./prediction/prediction-form.component').then((m) => m.PredictionFormComponent),
   },
   {
@@ -38,10 +40,19 @@ export const appRoutes: Routes = [
         path: 'users',
         loadComponent: () => import('./admin/admin-users.component').then((m) => m.AdminUsersComponent),
       },
+      {
+        path: 'predictions',
+        loadComponent: () => import('./admin/admin-predictions.component').then((m) => m.AdminPredictionsComponent),
+      },
+      {
+        path: 'health',
+        loadComponent: () => import('./admin/admin-health.component').then((m) => m.AdminHealthComponent),
+      },
     ],
   },
   {
     path: 'analytics',
+    canActivate: [adminGuard],
     loadComponent: () => import('./analytics/analytics.component').then((m) => m.AnalyticsComponent),
   },
   {

@@ -1,29 +1,100 @@
 <div class="admin-page">
   <div class="admin-head">
-    <span class="eyebrow">Admin console</span>
-    <h1>User management</h1>
-    <p>Search patient and admin accounts across the CardioSight platform.</p>
+    <span class="eyebrow">Admin Console</span>
+    <h1>User Management</h1>
+    <p>Search, audit, inspect demographics, and govern accounts across the CardioSight platform.</p>
   </div>
 
-  <div class="toolbar">
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-icon matPrefix>search</mat-icon>
-      <input matInput [formControl]="search" placeholder="Search by name or email…" />
-    </mat-form-field>
-    <span class="toolbar-count"><strong>{{ users().length }}</strong> users</span>
+  <!-- Filter & Search Controls -->
+  <div class="controls-card">
+    <div class="controls-top">
+      <!-- Search -->
+      <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="search" placeholder="Search by patient name or email…" />
+      </mat-form-field>
+
+      <!-- Account Type Segmented Filter -->
+      <div class="type-pills">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="typeFilter.value === 'genuine'"
+          (click)="typeFilter.setValue('genuine')"
+        >
+          <mat-icon>verified</mat-icon>
+          <span>Genuine Patients</span>
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="typeFilter.value === 'all'"
+          (click)="typeFilter.setValue('all')"
+        >
+          <mat-icon>people</mat-icon>
+          <span>All Accounts</span>
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="typeFilter.value === 'test'"
+          (click)="typeFilter.setValue('test')"
+        >
+          <mat-icon>biotech</mat-icon>
+          <span>Test / QA Accounts</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="controls-bottom">
+      <div class="select-group">
+        <mat-form-field appearance="outline" class="mini-select" subscriptSizing="dynamic">
+          <mat-label>Role</mat-label>
+          <mat-select [formControl]="roleFilter">
+            <mat-option value="all">All Roles</mat-option>
+            <mat-option value="patient">Patients Only</mat-option>
+            <mat-option value="admin">Administrators Only</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="mini-select" subscriptSizing="dynamic">
+          <mat-label>Status</mat-label>
+          <mat-select [formControl]="statusFilter">
+            <mat-option value="all">All Statuses</mat-option>
+            <mat-option value="active">Active</mat-option>
+            <mat-option value="inactive">Inactive</mat-option>
+            <mat-option value="suspended">Suspended</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="mini-select" subscriptSizing="dynamic">
+          <mat-label>Sort By</mat-label>
+          <mat-select [formControl]="sortBy">
+            <mat-option value="createdAt">Registration Date</mat-option>
+            <mat-option value="lastActiveAt">Last Activity</mat-option>
+            <mat-option value="predictionsCount">Total Predictions</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <span class="user-count">
+        Showing <strong>{{ users().length }}</strong> accounts
+      </span>
+    </div>
   </div>
 
+  <!-- Users Table -->
   @if (loading()) {
     <div class="table-wrap">
       <mat-progress-bar mode="indeterminate" color="primary"></mat-progress-bar>
-      <div style="min-height: 260px"></div>
+      <div style="min-height: 280px"></div>
     </div>
   } @else if (users().length === 0) {
     <div class="table-wrap">
       <app-empty-state
         icon="person_off"
-        title="No users found"
-        message="No accounts match your search. Try a different name or email."
+        title="No accounts found"
+        message="No accounts match your current filter and search criteria."
       ></app-empty-state>
     </div>
   } @else {
@@ -31,12 +102,13 @@
       <table class="users-table">
         <thead>
           <tr>
-            <th>User</th>
+            <th>User Account</th>
             <th>Role</th>
-            <th class="hide-mobile">Predictions</th>
-            <th>Status</th>
-            <th class="hide-mobile">Last active</th>
-            <th></th>
+            <th class="hide-mobile">Registered</th>
+            <th>Predictions</th>
+            <th>Account Status</th>
+            <th class="hide-mobile">Last Active</th>
+            <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -45,33 +117,65 @@
               <td>
                 <div class="user-cell">
                   <app-avatar [name]="u.firstName + ' ' + u.lastName" [color]="u.avatarColor" [size]="38"></app-avatar>
-                  <div>
-                    <strong>{{ u.firstName }} {{ u.lastName }}</strong>
-                    <span>{{ u.email }}</span>
+                  <div class="u-meta">
+                    <div class="u-name-line">
+                      <strong>{{ u.firstName }} {{ u.lastName }}</strong>
+                      <span class="type-tag" [class]="accountTypeClass(u)">
+                        {{ accountTypeLabel(u) }}
+                      </span>
+                    </div>
+                    <span class="u-email">{{ u.email }}</span>
                   </div>
                 </div>
               </td>
               <td>
-                <span class="role-chip" [class]="u.role">{{ u.role }}</span>
+                <span class="role-chip" [class]="u.role">{{ u.role | uppercase }}</span>
               </td>
               <td class="hide-mobile">
-                <strong>{{ u.predictionsCount }}</strong>
+                <span class="date-text">{{ u.createdAt | date: 'MMM d, y' }}</span>
+              </td>
+              <td>
+                <span class="preds-badge" [class.zero]="u.predictionsCount === 0">
+                  {{ u.predictionsCount }}
+                </span>
               </td>
               <td>
                 <span class="status-chip" [class]="statusClass(u.status)">
                   <span class="dot"></span>
-                  {{ u.status }}
+                  {{ u.status | titlecase }}
                 </span>
               </td>
               <td class="hide-mobile">
-                <span style="font-size: 12px; color: var(--text-secondary)">{{ u.lastActiveAt | date: 'MMM d, h:mm a' }}</span>
+                <span class="date-text">{{ u.lastActiveAt | date: 'MMM d, h:mm a' }}</span>
               </td>
-              <td>
+              <td class="text-right">
                 <div class="row-actions">
-                  <button mat-icon-button matTooltip="Suspend account" (click)="suspend(u)">
-                    <mat-icon>block</mat-icon>
+                  <button
+                    mat-icon-button
+                    matTooltip="Inspect Account & Medical History"
+                    (click)="viewDetails(u)"
+                  >
+                    <mat-icon>person_search</mat-icon>
                   </button>
-                  <button mat-icon-button matTooltip="Delete account" color="warn" (click)="delete(u)">
+
+                  <button
+                    mat-icon-button
+                    [matTooltip]="u.status === 'suspended' ? 'Reactivate account' : 'Suspend account'"
+                    [disabled]="u.role === 'admin'"
+                    (click)="toggleStatus(u)"
+                  >
+                    <mat-icon [style.color]="u.status === 'suspended' ? '#4ade80' : '#f59e0b'">
+                      {{ u.status === 'suspended' ? 'check_circle' : 'block' }}
+                    </mat-icon>
+                  </button>
+
+                  <button
+                    mat-icon-button
+                    matTooltip="Delete account safely"
+                    color="warn"
+                    [disabled]="u.role === 'admin'"
+                    (click)="delete(u)"
+                  >
                     <mat-icon>delete_outline</mat-icon>
                   </button>
                 </div>
@@ -80,6 +184,182 @@
           }
         </tbody>
       </table>
+    </div>
+  }
+
+  <!-- Account Details & Prediction History Drawer Overlay -->
+  @if (inspectingUser()) {
+    <div class="drawer-backdrop" (click)="closeDrawer()"></div>
+    <div class="inspection-drawer">
+      <div class="drawer-header">
+        <div class="d-title-group">
+          <app-avatar
+            [name]="inspectingUser()!.firstName + ' ' + inspectingUser()!.lastName"
+            [color]="inspectingUser()!.avatarColor"
+            [size]="46"
+          ></app-avatar>
+          <div>
+            <h2>{{ inspectingUser()!.firstName }} {{ inspectingUser()!.lastName }}</h2>
+            <span class="d-email">{{ inspectingUser()!.email }}</span>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeDrawer()" matTooltip="Close drawer">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="drawer-body">
+        <!-- Overview Chips -->
+        <div class="d-chips-row">
+          <span class="type-tag" [class]="accountTypeClass(inspectingUser()!)">
+            {{ accountTypeLabel(inspectingUser()!) }}
+          </span>
+          <span class="role-chip" [class]="inspectingUser()!.role">
+            ROLE: {{ inspectingUser()!.role | uppercase }}
+          </span>
+          <span class="status-chip" [class]="statusClass(inspectingUser()!.status)">
+            <span class="dot"></span>
+            STATUS: {{ inspectingUser()!.status | uppercase }}
+          </span>
+        </div>
+
+        <!-- Demographics & Clinical Factors -->
+        <div class="drawer-section">
+          <h3>Demographics & Baseline Clinical Data</h3>
+          <div class="meta-grid">
+            <div class="m-item">
+              <span class="m-lbl">Gender</span>
+              <strong class="m-val">{{ inspectingUser()!.gender ? (inspectingUser()!.gender | titlecase) : 'Not recorded' }}</strong>
+            </div>
+            <div class="m-item">
+              <span class="m-lbl">Date of Birth</span>
+              <strong class="m-val">{{ inspectingUser()!.dateOfBirth || 'Not recorded' }}</strong>
+            </div>
+            <div class="m-item">
+              <span class="m-lbl">Height</span>
+              <strong class="m-val">{{ inspectingUser()!.heightCm ? inspectingUser()!.heightCm + ' cm' : 'Not recorded' }}</strong>
+            </div>
+            <div class="m-item">
+              <span class="m-lbl">Weight</span>
+              <strong class="m-val">{{ inspectingUser()!.weightKg ? inspectingUser()!.weightKg + ' kg' : 'Not recorded' }}</strong>
+            </div>
+            <div class="m-item">
+              <span class="m-lbl">Phone Number</span>
+              <strong class="m-val">{{ inspectingUser()!.phone || 'Not provided' }}</strong>
+            </div>
+            <div class="m-item">
+              <span class="m-lbl">Blood Group</span>
+              <strong class="m-val">{{ inspectingUser()!.bloodGroup || 'Not recorded' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medical Profile -->
+        <div class="drawer-section">
+          <h3>Recorded Medical Context</h3>
+          <div class="clinical-box">
+            <div class="c-row">
+              <span class="c-lbl">Known Allergies:</span>
+              <span class="c-val">{{ inspectingUser()!.allergies.length ? inspectingUser()!.allergies.join(', ') : 'None documented' }}</span>
+            </div>
+            <div class="c-row">
+              <span class="c-lbl">Active Medications:</span>
+              <span class="c-val">{{ inspectingUser()!.medications.length ? inspectingUser()!.medications.join(', ') : 'None documented' }}</span>
+            </div>
+            <div class="c-row">
+              <span class="c-lbl">Underlying Conditions:</span>
+              <span class="c-val">{{ inspectingUser()!.medicalConditions.length ? inspectingUser()!.medicalConditions.join(', ') : 'None documented' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prediction Stats Summary -->
+        <div class="drawer-section">
+          <h3>Assessment Summary</h3>
+          <div class="stats-cards-row">
+            <div class="s-card">
+              <span class="s-val">{{ inspectingUser()!.stats.predictionsCount }}</span>
+              <span class="s-lbl">Total Assessments</span>
+            </div>
+            <div class="s-card">
+              <span class="s-val">{{ inspectingUser()!.stats.avgRiskScore | number: '1.0-0' }}%</span>
+              <span class="s-lbl">Average Risk</span>
+            </div>
+            <div class="s-card">
+              <span class="s-val" [style.color]="inspectingUser()!.stats.latestAssessment?.risk_level === 'high' ? '#f87171' : inspectingUser()!.stats.latestAssessment?.risk_level === 'medium' ? '#fbbf24' : '#4ade80'">
+                {{ inspectingUser()!.stats.latestAssessment?.risk_level ? (inspectingUser()!.stats.latestAssessment?.risk_level | uppercase) : 'None' }}
+              </span>
+              <span class="s-lbl">Latest Assessment</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historical Predictions List -->
+        <div class="drawer-section">
+          <div class="sec-title-split">
+            <h3>Prediction History</h3>
+            <span class="rec-count">{{ userPredictions().length }} records</span>
+          </div>
+
+          @if (userPredictions().length === 0) {
+            <p class="empty-note">This patient has not submitted any cardiovascular predictions yet.</p>
+          } @else {
+            <div class="predictions-list">
+              @for (p of userPredictions(); track p.id) {
+                <div class="pred-item">
+                  <div class="pi-left">
+                    <span class="risk-badge" [class]="p.riskLevel.toLowerCase()">
+                      {{ p.riskLevel | uppercase }}
+                    </span>
+                    <div class="pi-meta">
+                      <strong>{{ p.riskScore | number: '1.0-0' }}% 10-Year Risk</strong>
+                      <span class="pi-date">{{ p.submittedAt | date: 'MMM d, y, h:mm a' }}</span>
+                    </div>
+                  </div>
+                  <div class="pi-right">
+                    <div class="pi-mods">
+                      @if (p.hasEcg) { <span class="tag-mod">ECG</span> }
+                      @if (p.hasTmt) { <span class="tag-mod">TMT</span> }
+                    </div>
+                    <a
+                      mat-stroked-button
+                      class="inspect-link"
+                      [routerLink]="['/app/result', p.id]"
+                      (click)="closeDrawer()"
+                      matTooltip="Inspect full diagnostic result"
+                    >
+                      <mat-icon>visibility</mat-icon>
+                      <span>View</span>
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Drawer Footer Controls -->
+      <div class="drawer-footer">
+        <button
+          mat-stroked-button
+          [disabled]="inspectingUser()!.role === 'admin'"
+          (click)="toggleStatus(inspectingUser()!)"
+        >
+          <mat-icon>{{ inspectingUser()!.status === 'suspended' ? 'check_circle' : 'block' }}</mat-icon>
+          <span>{{ inspectingUser()!.status === 'suspended' ? 'Reactivate Account' : 'Suspend Account' }}</span>
+        </button>
+
+        <button
+          mat-stroked-button
+          color="warn"
+          [disabled]="inspectingUser()!.role === 'admin'"
+          (click)="delete(inspectingUser()!)"
+        >
+          <mat-icon>delete</mat-icon>
+          <span>Delete User</span>
+        </button>
+      </div>
     </div>
   }
 </div>

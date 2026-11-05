@@ -30,11 +30,14 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401) {
         const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
         if (!isAuthEndpoint) {
+          const hadSession = Boolean(auth.accessToken());
           auth.logout();
           router.navigate(['/auth/login'], {
             queryParams: { returnUrl: router.routerState.snapshot.url },
           });
-          toast.error('Session expired', message || 'Your session has expired. Please log in again.');
+          if (hadSession) {
+            toast.error('Session expired', message || 'Your session has expired. Please log in again.');
+          }
           return throwError(() => error);
         }
         toast.error('Authentication failed', message);
